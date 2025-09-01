@@ -144,12 +144,13 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
-    // Initialize LIFF and handle login
+    // Initialize LIFF and handle login with explicit scopes
     async function initializeLiff() {
       try {
         await liff.init({ liffId: "2005780370-QmwJlX9q", withLoginOnExternalBrowser: true });
         if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href });
+          // Request chat_message.write scope during login
+          liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
           return;
         }
         const liffProfile = await liff.getProfile();
@@ -316,13 +317,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send flex error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send Flex!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send Flex!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -345,13 +362,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send text error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send text!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send text!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -376,13 +409,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send image error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send image!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send image!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -407,13 +456,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send video error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send video!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send video!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -440,13 +505,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send location error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send location!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send location!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -471,13 +552,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send sticker error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send sticker!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send sticker!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -502,13 +599,29 @@
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
           console.error("Send audio error:", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send audio!",
-            text: err.message,
-            showConfirmButton: true
-          });
+          if (err.message.includes("user doesn't grant required permissions")) {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Permission required!",
+              text: "Please re-login to grant the chat_message.write permission.",
+              showConfirmButton: true,
+              confirmButtonText: "Re-login",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                liff.logout();
+                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+              }
+            });
+          } else {
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send audio!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
         });
       });
     }
@@ -541,13 +654,29 @@
             document.getElementById("textBox2").value = "";
           }).catch((err) => {
             console.error("Send template error:", err);
-            Swal.fire({
-              position: "center",
-              icon: "error",
-              title: "Failed to send template!",
-              text: err.message,
-              showConfirmButton: true
-            });
+            if (err.message.includes("user doesn't grant required permissions")) {
+              Swal.fire({
+                position: "center",
+                icon: "error",
+                title: "Permission required!",
+                text: "Please re-login to grant the chat_message.write permission.",
+                showConfirmButton: true,
+                confirmButtonText: "Re-login",
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  liff.logout();
+                  liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+                }
+              });
+            } else {
+              Swal.fire({
+                position: "center",
+                icon: "error",
+                title: "Failed to send template!",
+                text: err.message,
+                showConfirmButton: true
+              });
+            }
           });
         });
       } catch (err) {
