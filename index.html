@@ -222,7 +222,7 @@
       var altText = document.getElementById("textBox1").value;
       var message = document.getElementById("textBox2").value;
       liff.ready.then(() => {
-        liff.shareTargetPicker([{
+        liff.sendMessages([{
           type: "flex",
           altText: altText || "Flex Message",
           contents: JSON.parse(message),
