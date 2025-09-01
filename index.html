@@ -49,6 +49,9 @@
       margin: 5px;
       width: auto;
     }
+    video, audio {
+      max-width: 100%;
+    }
   </style>
 </head>
 
@@ -81,7 +84,7 @@
       <div style="background-color: white; padding: 10px; border-radius: 5px;" class="mt-3 form-control" id="showtext"
         readonly></div>
 
-      <p class="mb-3 mt-3 text-white">กดปุ่มเพื่อส่งไปหาเพื่อนของคุณ</p>
+      <p class="mb-3 mt-3 text-white">กดปุ่มเพื่อส่งหรือดูตัวอย่าง</p>
       <div class="d-flex flex-wrap">
         <button style="background-color: rgb(123, 32, 175);" class="btn btn-danger mb-3" type="button" onclick="show_image()">
           Show Img
@@ -91,6 +94,15 @@
         </button>
         <button style="background-color: rgb(176, 11, 124);" class="btn btn-danger mb-3" type="button" onclick="showText()">
           Show Text
+        </button>
+        <button style="background-color: rgb(50, 100, 200);" class="btn btn-danger mb-3" type="button" onclick="showVideo()">
+          Show Video
+        </button>
+        <button style="background-color: rgb(100, 50, 150);" class="btn btn-danger mb-3" type="button" onclick="playAudio()">
+          Play Audio
+        </button>
+        <button style="background-color: rgb(200, 150, 50);" class="btn btn-primary mb-3" type="button" onclick="getCurrentLocation()">
+          Get Location
         </button>
         <button style="background-color: rgb(162, 80, 255);" class="btn btn-success mb-3" type="button" onclick="sendImage()">
           Send Img
@@ -131,7 +143,6 @@
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
   <script>
     // Initialize LIFF and handle login
     async function initializeLiff() {
@@ -193,7 +204,7 @@
         var flexdat = { type: "flex", altText: document.getElementById("textBox1").value || "Flex Message", contents: x };
         flex2html("flex1", flexdat);
       } catch (err) {
-        console.log(err);
+        console.error('Flex preview error:', err);
         document.getElementById('flex1').innerHTML = "";
         Swal.fire({
           position: "center",
@@ -219,6 +230,72 @@
       document.getElementById("flex1").appendChild(img);
     }
 
+    function showVideo() {
+      var src = document.getElementById("textBox2").value;
+      var video = document.createElement("video");
+      video.src = src;
+      video.controls = true;
+      video.setAttribute('width', '100%');
+      document.getElementById("flex1").innerHTML = "";
+      document.getElementById("flex1").appendChild(video);
+    }
+
+    function playAudio() {
+      var src = document.getElementById("textBox2").value;
+      var audio = document.createElement("audio");
+      audio.src = src;
+      audio.controls = true;
+      document.getElementById("flex1").innerHTML = "";
+      document.getElementById("flex1").appendChild(audio);
+      audio.play().catch(err => {
+        console.error('Audio playback error:', err);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Failed to play audio!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      });
+    }
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            document.getElementById("textBox1").value = position.coords.latitude;
+            document.getElementById("textBox2").value = position.coords.longitude;
+            Swal.fire({
+              position: "center",
+              icon: "success",
+              title: "ดึงพิกัดเรียบร้อย !",
+              text: `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`,
+              showConfirmButton: false,
+              timer: 1500
+            });
+          },
+          err => {
+            console.error('Geolocation error:', err);
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to get location!",
+              text: err.message,
+              showConfirmButton: true
+            });
+          }
+        );
+      } else {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Geolocation not supported!",
+          text: "Your browser does not support geolocation.",
+          showConfirmButton: true
+        });
+      }
+    }
+
     function myFunction() {
       var altText = document.getElementById("textBox1").value;
       var message = document.getElementById("textBox2").value;
@@ -238,7 +315,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send flex error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -267,7 +344,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send text error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -298,7 +375,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send image error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -329,7 +406,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send video error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -362,7 +439,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send location error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -393,7 +470,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send sticker error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -424,7 +501,7 @@
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
         }).catch((err) => {
-          console.log("error", err);
+          console.error("Send audio error:", err);
           Swal.fire({
             position: "center",
             icon: "error",
@@ -438,32 +515,51 @@
 
     function sendTemplate() {
       var templateJson = document.getElementById("textBox2").value;
-      liff.ready.then(() => {
-        liff.sendMessages([{
-          type: "template",
-          altText: "Template Message",
-          template: JSON.parse(templateJson)
-        }]).then(() => {
-          Swal.fire({
-            position: "center",
-            icon: "success",
-            title: "ส่ง Template เรียบร้อย !",
-            showConfirmButton: false,
-            timer: 1500,
-          });
-          document.getElementById("textBox1").value = "";
-          document.getElementById("textBox2").value = "";
-        }).catch((err) => {
-          console.log("error", err);
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title: "Failed to send template!",
-            text: err.message,
-            showConfirmButton: true
+      try {
+        const template = JSON.parse(templateJson);
+        // Validate template structure
+        if (template.type === "buttons" && template.actions) {
+          const invalidActions = template.actions.filter(action => action.type !== "uri");
+          if (invalidActions.length > 0) {
+            throw new Error("Template actions must be of type 'uri' only.");
+          }
+        }
+        liff.ready.then(() => {
+          liff.sendMessages([{
+            type: "template",
+            altText: "Template Message",
+            template: template
+          }]).then(() => {
+            Swal.fire({
+              position: "center",
+              icon: "success",
+              title: "ส่ง Template เรียบร้อย !",
+              showConfirmButton: false,
+              timer: 1500,
+            });
+            document.getElementById("textBox1").value = "";
+            document.getElementById("textBox2").value = "";
+          }).catch((err) => {
+            console.error("Send template error:", err);
+            Swal.fire({
+              position: "center",
+              icon: "error",
+              title: "Failed to send template!",
+              text: err.message,
+              showConfirmButton: true
+            });
           });
         });
-      });
+      } catch (err) {
+        console.error("Template error:", err);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid Template JSON!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
     }
 
     function goSimulator() {
