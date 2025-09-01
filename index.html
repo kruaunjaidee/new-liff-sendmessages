@@ -137,6 +137,29 @@
         padding: 5px 10px;
         font-size: 0.9rem;
       }
+      #template-preview img {
+        max-width: 100%;
+        border-radius: 10px;
+        margin-bottom: 10px;
+      }
+      #template-preview .title {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+      }
+      #template-preview .text {
+        margin-bottom: 10px;
+      }
+      #template-preview .action-btn {
+        display: block;
+        margin: 5px 0;
+        padding: 10px;
+        background-color: #00c4b4;
+        color: white;
+        text-align: center;
+        border-radius: 5px;
+        text-decoration: none;
+      }
     
       @media (max-width: 576px) {
         .container {
@@ -171,7 +194,7 @@
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template/Flex)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON actions สำหรับ Template)"
         ></textarea>
       </div>
       <div
@@ -321,51 +344,87 @@
         showTextElement.textContent = document.getElementById("textBox2").value;
       }
 
-      function showTemplate() {
-        const flexContainer = document.getElementById("flex1");
-        flexContainer.innerHTML = "";
-        try {
-          const templateJson = document.getElementById("textBox2").value;
-          let templateObject;
-          if (templateJson.trim()) {
-            templateObject = JSON.parse(templateJson);
-          } else {
-            templateObject = {
-              type: "confirm",
-              text: document.getElementById("textBox1").value || "คุณต้องการยืนยันหรือไม่?",
-              actions: [
-                { type: "message", label: "ใช่", text: "Yes" },
-                { type: "message", label: "ไม่", text: "No" }
-              ]
-            };
-          }
-          if (!isValidTemplateMessage(templateObject)) {
-            throw new Error("Invalid Template Message structure");
-          }
-          flexContainer.innerHTML = `<pre style="white-space: pre-wrap;">${JSON.stringify(templateObject, null, 2)}</pre>`;
-        } catch (error) {
-          console.error("Error parsing Template JSON:", error);
-          flexContainer.innerHTML = '<p class="text-danger">Invalid Template JSON. Please check your input.</p>';
-        }
-      }
-
       function showSticker() {
         const flexContainer = document.getElementById("flex1");
         flexContainer.innerHTML = "";
         const packageId = document.getElementById("textBox1").value || "11537";
         const stickerId = document.getElementById("textBox2").value || "52002734";
-        // Attempt to fetch sticker image from LINE's CDN (note: actual sticker image URLs may vary)
         const stickerUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${stickerId}/android/sticker.png`;
         flexContainer.innerHTML = `<img src="${stickerUrl}" alt="Sticker (packageId: ${packageId}, stickerId: ${stickerId})" style="max-width: 200px;" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Sticker+Not+Found';">`;
       }
 
-      function isValidTemplateMessage(obj) {
+      function showTemplate() {
+        const flexContainer = document.getElementById("flex1");
+        flexContainer.innerHTML = "";
+        try {
+          const actionsJson = document.getElementById("textBox2").value;
+          const title = document.getElementById("textBox1").value || "Choose an Option";
+          let actions;
+          if (actionsJson.trim()) {
+            actions = JSON.parse(actionsJson);
+            if (!Array.isArray(actions)) {
+              throw new Error("Actions must be an array");
+            }
+          } else {
+            actions = [
+              {
+                type: "uri",
+                label: "ตรวจหวยงวดนี้",
+                uri: "https://liff.line.me/1454988218-NjbXbq18/v3/lottery/r/20250901"
+              },
+              {
+                type: "uri",
+                label: "เข้าหอสมุด",
+                uri: "https://cdn-path.github.io/library-checking.github.io"
+              }
+            ];
+          }
+          const templateObject = {
+            type: "buttons",
+            thumbnailImageUrl: "https://cdn.pixabay.com/photo/2014/09/03/20/15/shoes-434918__480.jpg",
+            imageAspectRatio: "square",
+            imageSize: "contain",
+            imageBackgroundColor: "#F99C9C",
+            title: title,
+            text: "Please select a link below",
+            actions: actions
+          };
+          if (!isValidButtonsTemplate(templateObject)) {
+            throw new Error("Invalid Buttons Template structure");
+          }
+          flexContainer.innerHTML = `
+            <div id="template-preview">
+              <img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail">
+              <div class="title">${escapeHtml(templateObject.title)}</div>
+              <div class="text">${escapeHtml(templateObject.text)}</div>
+              ${templateObject.actions.map(action => `
+                <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+              `).join('')}
+            </div>
+          `;
+        } catch (error) {
+          console.error("Error parsing Template actions JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid Template actions JSON. Please check your input.</p>';
+        }
+      }
+
+      function isValidButtonsTemplate(obj) {
         return (
           obj &&
-          obj.type === "confirm" &&
-          obj.text &&
+          obj.type === "buttons" &&
+          typeof obj.title === "string" &&
+          typeof obj.text === "string" &&
           Array.isArray(obj.actions) &&
-          obj.actions.every(action => action.type === "message" && action.label && action.text)
+          obj.actions.every(action => 
+            action.type === "uri" && 
+            typeof action.label === "string" && 
+            typeof action.uri === "string" &&
+            action.uri.startsWith("http")
+          ) &&
+          (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
+          (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
+          (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
+          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor))
         );
       }
 
@@ -374,27 +433,44 @@
       }
 
       function sendTemplate() {
-        const altText = document.getElementById("textBox1").value || "Template Message";
-        let templateObject;
+        const altText = document.getElementById("textBox1").value || "this is a buttons template";
         try {
-          const templateJson = document.getElementById("textBox2").value;
-          if (templateJson.trim()) {
-            templateObject = JSON.parse(templateJson);
+          const actionsJson = document.getElementById("textBox2").value;
+          let actions;
+          if (actionsJson.trim()) {
+            actions = JSON.parse(actionsJson);
+            if (!Array.isArray(actions)) {
+              throw new Error("Actions must be an array");
+            }
           } else {
-            templateObject = {
-              type: "confirm",
-              text: altText,
-              actions: [
-                { type: "message", label: "ใช่", text: "Yes" },
-                { type: "message", label: "ไม่", text: "No" }
-              ]
-            };
+            actions = [
+              {
+                type: "uri",
+                label: "ตรวจหวยงวดนี้",
+                uri: "https://liff.line.me/1454988218-NjbXbq18/v3/lottery/r/20250901"
+              },
+              {
+                type: "uri",
+                label: "เข้าหอสมุด",
+                uri: "https://cdn-path.github.io/library-checking.github.io"
+              }
+            ];
           }
-          if (!isValidTemplateMessage(templateObject)) {
+          const templateObject = {
+            type: "buttons",
+            thumbnailImageUrl: "https://cdn.pixabay.com/photo/2014/09/03/20/15/shoes-434918__480.jpg",
+            imageAspectRatio: "square",
+            imageSize: "contain",
+            imageBackgroundColor: "#F99C9C",
+            title: document.getElementById("textBox1").value || "Choose an Option",
+            text: "Please select a link below",
+            actions: actions
+          };
+          if (!isValidButtonsTemplate(templateObject)) {
             Swal.fire({
               icon: "error",
-              title: "Invalid Template Message structure",
-              text: "Please ensure your JSON follows the correct Template Message format.",
+              title: "Invalid Buttons Template structure",
+              text: "Please ensure your JSON actions follow the correct Buttons Template format.",
             });
             return;
           }
@@ -405,10 +481,10 @@
           };
           sendMessage(messageObj);
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
+          console.error("Error parsing Template actions JSON:", error);
           Swal.fire({
             icon: "error",
-            title: "Invalid Template JSON",
+            title: "Invalid Template actions JSON",
             text: "Please check your JSON input.",
           });
         }
