@@ -144,12 +144,32 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
+    // Helper function to check login status and prompt login if needed
+    async function checkLogin() {
+      if (!liff.isLoggedIn()) {
+        try {
+          await liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+          return false; // Stop execution to wait for login
+        } catch (err) {
+          console.error('Login failed:', err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Login failed!",
+            text: err.message,
+            showConfirmButton: true
+          });
+          return false;
+        }
+      }
+      return true; // User is logged in
+    }
+
     // Initialize LIFF and handle login with explicit scopes
     async function initializeLiff() {
       try {
         await liff.init({ liffId: "2005780370-QmwJlX9q", withLoginOnExternalBrowser: true });
         if (!liff.isLoggedIn()) {
-          // Request chat_message.write scope during login
           liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
           return;
         }
@@ -175,6 +195,7 @@
     initializeLiff();
 
     async function scanQrCode() {
+      if (!(await checkLogin())) return;
       try {
         const result = await liff.scanCodeV2();
         document.getElementById("textBox2").value = result.value;
@@ -297,7 +318,8 @@
       }
     }
 
-    function myFunction() {
+    async function myFunction() {
+      if (!(await checkLogin())) return;
       var altText = document.getElementById("textBox1").value;
       var message = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -344,7 +366,8 @@
       });
     }
 
-    function sendText() {
+    async function sendText() {
+      if (!(await checkLogin())) return;
       var textUser = document.getElementById("textBox2").value;
       liff.ready.then(() => {
         liff.sendMessages([{
@@ -389,7 +412,8 @@
       });
     }
 
-    function sendImage() {
+    async function sendImage() {
+      if (!(await checkLogin())) return;
       var previewUrl = document.getElementById("textBox1").value;
       var contentUrl = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -436,7 +460,8 @@
       });
     }
 
-    function sendVideo() {
+    async function sendVideo() {
+      if (!(await checkLogin())) return;
       var previewUrl = document.getElementById("textBox1").value;
       var contentUrl = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -483,7 +508,8 @@
       });
     }
 
-    function sendLocation() {
+    async function sendLocation() {
+      if (!(await checkLogin())) return;
       var latitude = document.getElementById("textBox1").value;
       var longitude = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -532,7 +558,8 @@
       });
     }
 
-    function sendSticker() {
+    async function sendSticker() {
+      if (!(await checkLogin())) return;
       var packageId = document.getElementById("textBox1").value;
       var stickerId = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -579,7 +606,8 @@
       });
     }
 
-    function sendAudio() {
+    async function sendAudio() {
+      if (!(await checkLogin())) return;
       var duration = document.getElementById("textBox1").value;
       var audioUrl = document.getElementById("textBox2").value;
       liff.ready.then(() => {
@@ -626,7 +654,8 @@
       });
     }
 
-    function sendTemplate() {
+    async function sendTemplate() {
+      if (!(await checkLogin())) return;
       var templateJson = document.getElementById("textBox2").value;
       try {
         const template = JSON.parse(templateJson);
