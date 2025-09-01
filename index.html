@@ -65,6 +65,10 @@
       <p class="text-white mb-2" id="userId"></p>
       <p class="text-white mb-2" id="statusMessage"></p>
       <p class="text-white mb-2" id="getDecodedIDToken"></p>
+      <button style="background-color: rgb(255, 99, 71); width: auto;" class="btn btn-danger mb-3 text-white"
+        onclick="logout()">
+        Logout
+      </button>
       <h2 class="mt-3 text-white">❤️ ShareTargetPicker & SendMessages ❤️</h2>
       <button style="background-color: rgb(7, 170, 207); width: auto;" class="btn btn-outline-danger mb-3 text-white"
         onclick="goSimulator()">
@@ -144,6 +148,19 @@
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
+    // Helper function to validate URLs
+    function isValidUrl(string, allowedExtensions = []) {
+      try {
+        const url = new URL(string.trim());
+        if (allowedExtensions.length > 0) {
+          return allowedExtensions.some(ext => string.toLowerCase().trim().endsWith(ext));
+        }
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch (err) {
+        return false;
+      }
+    }
+
     // Helper function to check login status and prompt login if needed
     async function checkLogin() {
       if (!liff.isLoggedIn()) {
@@ -165,20 +182,35 @@
       return true; // User is logged in
     }
 
-    // Initialize LIFF and handle login with explicit scopes
+    // Initialize LIFF and run app
+    async function runApp() {
+      try {
+        const profile = await liff.getProfile();
+        document.getElementById("pictureUrl").src = profile.pictureUrl || 'https://via.placeholder.com/50';
+        document.getElementById("userId").innerHTML = '<b>UserId:</b> ' + (profile.userId || 'N/A');
+        document.getElementById("displayName").innerHTML = '<b>สวัสดี:</b> ' + (profile.displayName || 'N/A');
+        document.getElementById("statusMessage").innerHTML = '<b>StatusMessage:</b> ' + (profile.statusMessage || 'N/A');
+        // Uncomment to display email if email scope is granted
+        // const idToken = liff.getDecodedIDToken();
+        // document.getElementById("getDecodedIDToken").innerHTML = '<b>Email:</b> ' + (idToken?.email || 'N/A');
+      } catch (err) {
+        console.error('Get profile failed:', err);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Failed to load profile!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
+    }
+
     async function initializeLiff() {
       try {
-        await liff.init({ liffId: "2005780370-QmwJlX9q", withLoginOnExternalBrowser: true });
-        if (!liff.isLoggedIn()) {
-          liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
-          return;
+        await liff.init({ liffId: "2000563749-xo0QX4Ny", withLoginOnExternalBrowser: true });
+        if (await checkLogin()) {
+          await runApp();
         }
-        const liffProfile = await liff.getProfile();
-        // Update profile information in the UI
-        document.getElementById("pictureUrl").src = liffProfile.pictureUrl || '';
-        document.getElementById("userId").innerHTML = '<b>UserId:</b> ' + (liffProfile.userId || 'N/A');
-        document.getElementById("displayName").innerHTML = '<b>สวัสดี:</b> ' + (liffProfile.displayName || 'N/A');
-        document.getElementById("statusMessage").innerHTML = '<b>StatusMessage:</b> ' + (liffProfile.statusMessage || 'N/A');
       } catch (err) {
         console.error('LIFF initialization failed:', err.code, err.message);
         Swal.fire({
@@ -186,6 +218,56 @@
           icon: "error",
           title: "Initialization failed!",
           text: err.message,
+          showConfirmButton: true
+        });
+      }
+    }
+
+    // Logout function
+    async function logout() {
+      if (!(await checkLogin())) return;
+      const accessToken = liff.getAccessToken();
+      if (accessToken) {
+        try {
+          const response = await fetch("https://api.line.me/oauth2/v2.1/revoke", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: `Bearer ${accessToken}`
+            },
+            body: new URLSearchParams({
+              access_token: accessToken
+            })
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          liff.logout();
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "Logged out successfully!",
+            showConfirmButton: false,
+            timer: 1500
+          }).then(() => {
+            liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+          });
+        } catch (err) {
+          console.error('Logout failed:', err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Logout failed!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        }
+      } else {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "No access token!",
+          text: "Unable to logout without an access token.",
           showConfirmButton: true
         });
       }
@@ -204,7 +286,7 @@
           icon: "success",
           title: "Scan เรียบร้อย !",
           showConfirmButton: false,
-          timer: 1500,
+          timer: 1500
         });
       } catch (err) {
         console.error('QR scan failed:', err);
@@ -245,6 +327,16 @@
 
     function show_image() {
       var src = document.getElementById("textBox2").value;
+      if (!isValidUrl(src, ['.jpg', '.jpeg', '.png'])) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid image URL!",
+          text: "Please enter a valid URL ending with .jpg, .jpeg, or .png",
+          showConfirmButton: true
+        });
+        return;
+      }
       var img = document.createElement("img");
       img.src = src;
       img.setAttribute('width', '100%');
@@ -254,6 +346,16 @@
 
     function showVideo() {
       var src = document.getElementById("textBox2").value;
+      if (!isValidUrl(src, ['.mp4'])) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid video URL!",
+          text: "Please enter a valid URL ending with .mp4",
+          showConfirmButton: true
+        });
+        return;
+      }
       var video = document.createElement("video");
       video.src = src;
       video.controls = true;
@@ -264,6 +366,16 @@
 
     function playAudio() {
       var src = document.getElementById("textBox2").value;
+      if (!isValidUrl(src, ['.m4a'])) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid audio URL!",
+          text: "Please enter a valid URL ending with .m4a",
+          showConfirmButton: true
+        });
+        return;
+      }
       var audio = document.createElement("audio");
       audio.src = src;
       audio.controls = true;
@@ -272,7 +384,7 @@
       audio.play().catch(err => {
         console.error('Audio playback error:', err);
         Swal.fire({
-          position: "center",
+          positionクエ: "center",
           icon: "error",
           title: "Failed to play audio!",
           text: err.message,
@@ -322,53 +434,78 @@
       if (!(await checkLogin())) return;
       var altText = document.getElementById("textBox1").value;
       var message = document.getElementById("textBox2").value;
-      liff.ready.then(() => {
-        liff.sendMessages([{
-          type: "flex",
-          altText: altText || "Flex Message",
-          contents: JSON.parse(message),
-        }]).then(() => {
-          Swal.fire({
-            position: "center",
-            icon: "success",
-            title: "ส่ง Flex เรียบร้อย !",
-            showConfirmButton: false,
-            timer: 1500,
+      try {
+        const contents = JSON.parse(message);
+        if (!contents || typeof contents !== 'object') {
+          throw new Error("Flex JSON must be a valid object.");
+        }
+        liff.ready.then(() => {
+          liff.sendMessages([{
+            type: "flex",
+            altText: altText || "Flex Message",
+            contents: contents
+          }]).then(() => {
+            Swal.fire({
+              position: "center",
+              icon: "success",
+              title: "ส่ง Flex เรียบร้อย !",
+              showConfirmButton: false,
+              timer: 1500
+            });
+            document.getElementById("textBox1").value = "";
+            document.getElementById("textBox2").value = "";
+          }).catch((err) => {
+            console.error("Send flex error:", err);
+            if (err.message.includes("user doesn't grant required permissions")) {
+              Swal.fire({
+                position: "center",
+                icon: "error",
+                title: "Permission required!",
+                text: "Please re-login to grant the chat_message.write permission.",
+                showConfirmButton: true,
+                confirmButtonText: "Re-login"
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  liff.logout();
+                  liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
+                }
+              });
+            } else {
+              Swal.fire({
+                position: "center",
+                icon: "error",
+                title: "Failed to send Flex!",
+                text: err.message,
+                showConfirmButton: true
+              });
+            }
           });
-          document.getElementById("textBox1").value = "";
-          document.getElementById("textBox2").value = "";
-        }).catch((err) => {
-          console.error("Send flex error:", err);
-          if (err.message.includes("user doesn't grant required permissions")) {
-            Swal.fire({
-              position: "center",
-              icon: "error",
-              title: "Permission required!",
-              text: "Please re-login to grant the chat_message.write permission.",
-              showConfirmButton: true,
-              confirmButtonText: "Re-login",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                liff.logout();
-                liff.login({ redirectUri: window.location.href, scope: "profile openid chat_message.write" });
-              }
-            });
-          } else {
-            Swal.fire({
-              position: "center",
-              icon: "error",
-              title: "Failed to send Flex!",
-              text: err.message,
-              showConfirmButton: true
-            });
-          }
         });
-      });
+      } catch (err) {
+        console.error("Flex JSON error:", err);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid Flex JSON!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
     }
 
     async function sendText() {
       if (!(await checkLogin())) return;
       var textUser = document.getElementById("textBox2").value;
+      if (!textUser || textUser.trim() === "") {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid text!",
+          text: "Please enter a non-empty text message.",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "text",
@@ -379,7 +516,7 @@
             icon: "success",
             title: "ส่งข้อความเรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -392,7 +529,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -416,6 +553,16 @@
       if (!(await checkLogin())) return;
       var previewUrl = document.getElementById("textBox1").value;
       var contentUrl = document.getElementById("textBox2").value;
+      if (!isValidUrl(previewUrl, ['.jpg', '.jpeg', '.png']) || !isValidUrl(contentUrl, ['.jpg', '.jpeg', '.png'])) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid image URLs!",
+          text: "Both preview and content URLs must be valid and end with .jpg, .jpeg, or .png",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "image",
@@ -427,7 +574,7 @@
             icon: "success",
             title: "ส่งภาพเรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -440,7 +587,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -464,6 +611,16 @@
       if (!(await checkLogin())) return;
       var previewUrl = document.getElementById("textBox1").value;
       var contentUrl = document.getElementById("textBox2").value;
+      if (!isValidUrl(previewUrl, ['.jpg', '.jpeg', '.png']) || !isValidUrl(contentUrl, ['.mp4'])) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid video URLs!",
+          text: "Preview URL must end with .jpg, .jpeg, or .png, and content URL must end with .mp4",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "video",
@@ -475,7 +632,7 @@
             icon: "success",
             title: "ส่งวิดีโอเรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -488,7 +645,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -512,20 +669,32 @@
       if (!(await checkLogin())) return;
       var latitude = document.getElementById("textBox1").value;
       var longitude = document.getElementById("textBox2").value;
+      const latNum = parseFloat(latitude);
+      const lonNum = parseFloat(longitude);
+      if (isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid coordinates!",
+          text: "Latitude must be between -90 and 90, and longitude must be between -180 and 180.",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "location",
           title: "คุณได้รับโลเคชั่น จากฉันแล้ว...",
           address: "ที่อยู่นี้สามารถดูได้จากแผนที่",
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude)
+          latitude: latNum,
+          longitude: lonNum
         }]).then(() => {
           Swal.fire({
             position: "center",
             icon: "success",
             title: "ส่งโลเคชั่นเรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -538,7 +707,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -562,6 +731,16 @@
       if (!(await checkLogin())) return;
       var packageId = document.getElementById("textBox1").value;
       var stickerId = document.getElementById("textBox2").value;
+      if (!packageId || !stickerId || isNaN(parseInt(packageId)) || isNaN(parseInt(stickerId))) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid sticker data!",
+          text: "Both Package ID and Sticker ID must be valid numbers.",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "sticker",
@@ -573,7 +752,7 @@
             icon: "success",
             title: "ส่งสติกเกอร์เรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -586,7 +765,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -610,18 +789,29 @@
       if (!(await checkLogin())) return;
       var duration = document.getElementById("textBox1").value;
       var audioUrl = document.getElementById("textBox2").value;
+      const durationNum = parseInt(duration);
+      if (!audioUrl || !isValidUrl(audioUrl, ['.m4a']) || isNaN(durationNum) || durationNum <= 0) {
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid audio data!",
+          text: "Audio URL must end with .m4a, and duration must be a positive number.",
+          showConfirmButton: true
+        });
+        return;
+      }
       liff.ready.then(() => {
         liff.sendMessages([{
           type: "audio",
           originalContentUrl: audioUrl,
-          duration: parseInt(duration)
+          duration: durationNum
         }]).then(() => {
           Swal.fire({
             position: "center",
             icon: "success",
             title: "ส่งเสียงเรียบร้อย !",
             showConfirmButton: false,
-            timer: 1500,
+            timer: 1500
           });
           document.getElementById("textBox1").value = "";
           document.getElementById("textBox2").value = "";
@@ -634,7 +824,7 @@
               title: "Permission required!",
               text: "Please re-login to grant the chat_message.write permission.",
               showConfirmButton: true,
-              confirmButtonText: "Re-login",
+              confirmButtonText: "Re-login"
             }).then((result) => {
               if (result.isConfirmed) {
                 liff.logout();
@@ -659,25 +849,44 @@
       var templateJson = document.getElementById("textBox2").value;
       try {
         const template = JSON.parse(templateJson);
-        // Validate template structure
-        if (template.type === "buttons" && template.actions) {
-          const invalidActions = template.actions.filter(action => action.type !== "uri");
-          if (invalidActions.length > 0) {
-            throw new Error("Template actions must be of type 'uri' only.");
+        if (!template || typeof template !== 'object' || !template.type) {
+          throw new Error("Template JSON must be a valid object with a type property.");
+        }
+        if (template.type === "template" && template.template && template.template.type === "buttons") {
+          // Validate thumbnailImageUrl if present
+          if (template.template.thumbnailImageUrl && !isValidUrl(template.template.thumbnailImageUrl, ['.jpg', '.jpeg', '.png'])) {
+            throw new Error("Thumbnail image URL must be valid and end with .jpg, .jpeg, or .png.");
+          }
+          // Validate actions
+          if (template.template.actions) {
+            const invalidActions = template.template.actions.filter(action => action.type !== "uri");
+            if (invalidActions.length > 0) {
+              throw new Error("Template actions must be of type 'uri' only.");
+            }
+            // Validate URIs in actions
+            const invalidUris = template.template.actions.filter(action => !isValidUrl(action.uri));
+            if (invalidUris.length > 0) {
+              throw new Error("All action URIs must be valid HTTPS URLs.");
+            }
+            // Trim whitespace from URIs
+            template.template.actions = template.template.actions.map(action => ({
+              ...action,
+              uri: action.uri.trim()
+            }));
           }
         }
         liff.ready.then(() => {
           liff.sendMessages([{
             type: "template",
-            altText: "Template Message",
-            template: template
+            altText: template.altText || "Template Message",
+            template: template.template || template
           }]).then(() => {
             Swal.fire({
               position: "center",
               icon: "success",
               title: "ส่ง Template เรียบร้อย !",
               showConfirmButton: false,
-              timer: 1500,
+              timer: 1500
             });
             document.getElementById("textBox1").value = "";
             document.getElementById("textBox2").value = "";
@@ -690,7 +899,7 @@
                 title: "Permission required!",
                 text: "Please re-login to grant the chat_message.write permission.",
                 showConfirmButton: true,
-                confirmButtonText: "Re-login",
+                confirmButtonText: "Re-login"
               }).then((result) => {
                 if (result.isConfirmed) {
                   liff.logout();
@@ -723,7 +932,7 @@
     function goSimulator() {
       liff.openWindow({
         url: "https://developers.line.biz/flex-simulator/",
-        external: true,
+        external: true
       });
     }
   </script>
