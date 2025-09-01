@@ -1,0 +1,477 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0,viewport-fit=cover" />
+  <title>LINE SHARE MESSAGE By KruAun Jaidee</title>
+  <link rel="stylesheet" href="flex2html.css" />
+  <script type="text/javascript" src="flex2html.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous" />
+
+  <style>
+    body {
+      background-color: rgb(55, 58, 236);
+    }
+    input, textarea {
+      width: 100%;
+      border-radius: 5px;
+      box-shadow: 1px 1px 10px 0.5px grey;
+    }
+    #label1, #label2 {
+      margin-left: 0px;
+    }
+    .showImg {
+      max-width: 100%;
+      max-height: 100%;
+      display: contents;
+    }
+    #showtext {
+      white-space: pre-wrap;
+      white-space: -moz-pre-wrap;
+      white-space: -pre-wrap;
+      white-space: -o-pre-wrap;
+      word-wrap: break-word;
+      color: rgb(2, 91, 35);
+    }
+    .chatbox {
+      width: auto;
+      border: 1px;
+      border-radius: 5px;
+    }
+    button {
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 5px;
+      width: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <form class="form-control-sm">
+      <center>
+        <img id="pictureUrl" class="img-circle mb-2 mt-3" alt="Cinque Terre" width="50" height="50" />
+        <p class="text-white mb-2" id="displayName"></p>
+      </center>
+      <p class="text-white mb-2" id="userId"></p>
+      <p class="text-white mb-2" id="statusMessage"></p>
+      <p class="text-white mb-2" id="getDecodedIDToken"></p>
+      <h2 class="mt-3 text-white">❤️ ShareTargetPicker & SendMessages ❤️</h2>
+      <button style="background-color: rgb(7, 170, 207); width: auto;" class="btn btn-outline-danger mb-3 text-white"
+        onclick="goSimulator()">
+        Flex Simulator
+      </button>
+      <br />
+      <label id="label1" class="text-white mb-2" for="textBox1">ข้อมูลที่ 1 (Sticker Package ID/Flex Alt Text/Image Preview/Video Preview/Location Latitude/Audio Duration)</label>
+      <input class="form-control mb-3" type="text" id="textBox1" />
+
+      <label id="label2" class="text-white mb-2" for="textBox2">ข้อมูลที่ 2 (Sticker ID/Audio Content/Text/Flex JSON/Image Content/Video Content/Location Longitude/Template JSON)</label>
+      <textarea class="form-control mb-3" id="textBox2"></textarea>
+
+      <div class="chatbox">
+        <div class="showImg" id="flex1"></div>
+      </div>
+
+      <div style="background-color: white; padding: 10px; border-radius: 5px;" class="mt-3 form-control" id="showtext"
+        readonly></div>
+
+      <p class="mb-3 mt-3 text-white">กดปุ่มเพื่อส่งไปหาเพื่อนของคุณ</p>
+      <div class="d-flex flex-wrap">
+        <button style="background-color: rgb(123, 32, 175);" class="btn btn-danger mb-3" type="button" onclick="show_image()">
+          Show Img
+        </button>
+        <button style="background-color: rgb(8, 156, 156);" class="btn btn-danger mb-3" type="button" onclick="showFlex()">
+          Show Flex
+        </button>
+        <button style="background-color: rgb(176, 11, 124);" class="btn btn-danger mb-3" type="button" onclick="showText()">
+          Show Text
+        </button>
+        <button style="background-color: rgb(162, 80, 255);" class="btn btn-success mb-3" type="button" onclick="sendImage()">
+          Send Img
+        </button>
+        <button style="background-color: rgb(255, 50, 50);" class="btn btn-danger mb-3" type="button" onclick="myFunction()">
+          Send Flex
+        </button>
+        <button style="background-color: rgb(7, 207, 80);" class="btn btn-success mb-3" type="button" onclick="sendText()">
+          Send Text
+        </button>
+        <button style="background-color: rgb(249, 48, 225);" class="btn btn-success mb-3" type="button" onclick="sendVideo()">
+          Send Vdo
+        </button>
+        <button style="background-color: rgb(239, 129, 26);" class="btn btn-primary mb-3" type="button" onclick="sendLocation()">
+          Send Loc
+        </button>
+        <button style="background-color: rgb(29, 20, 148);" class="btn btn-primary mb-3" type="button" onclick="scanQrCode()">
+          Scan QR
+        </button>
+        <button style="background-color: rgb(100, 200, 50);" class="btn btn-success mb-3" type="button" onclick="sendSticker()">
+          Send Sticker
+        </button>
+        <button style="background-color: rgb(50, 150, 200);" class="btn btn-success mb-3" type="button" onclick="sendAudio()">
+          Send Audio
+        </button>
+        <button style="background-color: rgb(200, 100, 150);" class="btn btn-success mb-3" type="button" onclick="sendTemplate()">
+          Send Template
+        </button>
+      </div>
+    </form>
+
+    <p class="mt-5 text-white" id="demo"></p>
+    <hr class="text-white" />
+    <center>
+      <p class="text-white">❤️ พัฒนาโดย ครูอั๋นใจดี ❤️</p>
+    </center>
+    <br />
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <script>
+    // Initialize LIFF and handle login
+    async function initializeLiff() {
+      try {
+        await liff.init({ liffId: "2005780370-QmwJlX9q", withLoginOnExternalBrowser: true });
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+        const liffProfile = await liff.getProfile();
+        // Update profile information in the UI
+        document.getElementById("pictureUrl").src = liffProfile.pictureUrl || '';
+        document.getElementById("userId").innerHTML = '<b>UserId:</b> ' + (liffProfile.userId || 'N/A');
+        document.getElementById("displayName").innerHTML = '<b>สวัสดี:</b> ' + (liffProfile.displayName || 'N/A');
+        document.getElementById("statusMessage").innerHTML = '<b>StatusMessage:</b> ' + (liffProfile.statusMessage || 'N/A');
+      } catch (err) {
+        console.error('LIFF initialization failed:', err.code, err.message);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Initialization failed!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
+    }
+
+    // Call initialization on page load
+    initializeLiff();
+
+    async function scanQrCode() {
+      try {
+        const result = await liff.scanCodeV2();
+        document.getElementById("textBox2").value = result.value;
+        Swal.fire({
+          position: "center",
+          icon: "success",
+          title: "Scan เรียบร้อย !",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+      } catch (err) {
+        console.error('QR scan failed:', err);
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "QR scan failed!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
+    }
+
+    function showFlex() {
+      var x = document.getElementById("textBox2").value;
+      try {
+        document.getElementById('flex1').innerHTML = "";
+        x = JSON.parse(x);
+        var flexdat = { type: "flex", altText: document.getElementById("textBox1").value || "Flex Message", contents: x };
+        flex2html("flex1", flexdat);
+      } catch (err) {
+        console.log(err);
+        document.getElementById('flex1').innerHTML = "";
+        Swal.fire({
+          position: "center",
+          icon: "error",
+          title: "Invalid Flex JSON!",
+          text: err.message,
+          showConfirmButton: true
+        });
+      }
+    }
+
+    function showText() {
+      var text = document.getElementById("textBox2").value;
+      document.getElementById('showtext').innerText = text;
+    }
+
+    function show_image() {
+      var src = document.getElementById("textBox2").value;
+      var img = document.createElement("img");
+      img.src = src;
+      img.setAttribute('width', '100%');
+      document.getElementById("flex1").innerHTML = "";
+      document.getElementById("flex1").appendChild(img);
+    }
+
+    function myFunction() {
+      var altText = document.getElementById("textBox1").value;
+      var message = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.shareTargetPicker([{
+          type: "flex",
+          altText: altText || "Flex Message",
+          contents: JSON.parse(message),
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่ง Flex เรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send Flex!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendText() {
+      var textUser = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "text",
+          text: textUser
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งข้อความเรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send text!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendImage() {
+      var previewUrl = document.getElementById("textBox1").value;
+      var contentUrl = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "image",
+          originalContentUrl: contentUrl,
+          previewImageUrl: previewUrl
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งภาพเรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send image!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendVideo() {
+      var previewUrl = document.getElementById("textBox1").value;
+      var contentUrl = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "video",
+          originalContentUrl: contentUrl,
+          previewImageUrl: previewUrl
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งวิดีโอเรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send video!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendLocation() {
+      var latitude = document.getElementById("textBox1").value;
+      var longitude = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "location",
+          title: "คุณได้รับโลเคชั่น จากฉันแล้ว...",
+          address: "ที่อยู่นี้สามารถดูได้จากแผนที่",
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude)
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งโลเคชั่นเรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send location!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendSticker() {
+      var packageId = document.getElementById("textBox1").value;
+      var stickerId = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "sticker",
+          packageId: packageId,
+          stickerId: stickerId
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งสติกเกอร์เรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send sticker!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendAudio() {
+      var duration = document.getElementById("textBox1").value;
+      var audioUrl = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "audio",
+          originalContentUrl: audioUrl,
+          duration: parseInt(duration)
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่งเสียงเรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send audio!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function sendTemplate() {
+      var templateJson = document.getElementById("textBox2").value;
+      liff.ready.then(() => {
+        liff.sendMessages([{
+          type: "template",
+          altText: "Template Message",
+          template: JSON.parse(templateJson)
+        }]).then(() => {
+          Swal.fire({
+            position: "center",
+            icon: "success",
+            title: "ส่ง Template เรียบร้อย !",
+            showConfirmButton: false,
+            timer: 1500,
+          });
+          document.getElementById("textBox1").value = "";
+          document.getElementById("textBox2").value = "";
+        }).catch((err) => {
+          console.log("error", err);
+          Swal.fire({
+            position: "center",
+            icon: "error",
+            title: "Failed to send template!",
+            text: err.message,
+            showConfirmButton: true
+          });
+        });
+      });
+    }
+
+    function goSimulator() {
+      liff.openWindow({
+        url: "https://developers.line.biz/flex-simulator/",
+        external: true,
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>
