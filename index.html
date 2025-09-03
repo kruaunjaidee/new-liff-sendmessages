@@ -266,6 +266,9 @@
         <button class="btn btn-success w-100" onclick="saveToSupabase()">
           บันทึก Flex Message
         </button>
+        <button class="btn btn-success w-100 mt-2" onclick="saveTemplateToSupabase()">
+          บันทึก Template Message
+        </button>
       </div>
       <div id="dataList" class="mt-3 bg-white p-2 rounded"></div>
     </div>
@@ -356,46 +359,20 @@
       function showTemplate() {
         const flexContainer = document.getElementById("flex1");
         flexContainer.innerHTML = "";
+        const templateJson = document.getElementById("textBox2").value.trim();
+        if (!templateJson) {
+          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Template JSON in the second input.</p>';
+          return;
+        }
         try {
-          const actionsJson = document.getElementById("textBox2").value;
-          const title = document.getElementById("textBox1").value || "Choose an Option";
-          let actions;
-          if (actionsJson.trim()) {
-            actions = JSON.parse(actionsJson);
-            if (!Array.isArray(actions)) {
-              throw new Error("Actions must be an array");
-            }
-          } else {
-            actions = [
-              {
-                type: "uri",
-                label: "ตรวจหวยงวดนี้",
-                uri: "https://liff.line.me/1454988218-NjbXbq18/v3/lottery/r/20250901"
-              },
-              {
-                type: "uri",
-                label: "เข้าหอสมุด",
-                uri: "https://cdn-path.github.io/library-checking.github.io"
-              }
-            ];
-          }
-          const templateObject = {
-            type: "buttons",
-            thumbnailImageUrl: "https://cdn.pixabay.com/photo/2014/09/03/20/15/shoes-434918__480.jpg",
-            imageAspectRatio: "square",
-            imageSize: "contain",
-            imageBackgroundColor: "#F99C9C",
-            title: title,
-            text: "Please select a link below",
-            actions: actions
-          };
+          const templateObject = JSON.parse(templateJson);
           if (!isValidButtonsTemplate(templateObject)) {
             throw new Error("Invalid Buttons Template structure");
           }
           flexContainer.innerHTML = `
             <div id="template-preview">
-              <img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail">
-              <div class="title">${escapeHtml(templateObject.title)}</div>
+              ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+              ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
               <div class="text">${escapeHtml(templateObject.text)}</div>
               ${templateObject.actions.map(action => `
                 <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
@@ -403,8 +380,8 @@
             </div>
           `;
         } catch (error) {
-          console.error("Error parsing Template actions JSON:", error);
-          flexContainer.innerHTML = '<p class="text-danger">Invalid Template actions JSON. Please check your input.</p>';
+          console.error("Error parsing Template JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid Template JSON. Please check your input.</p>';
         }
       }
 
@@ -412,7 +389,6 @@
         return (
           obj &&
           obj.type === "buttons" &&
-          typeof obj.title === "string" &&
           typeof obj.text === "string" &&
           Array.isArray(obj.actions) &&
           obj.actions.every(action => 
@@ -424,7 +400,8 @@
           (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
           (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
           (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
-          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor))
+          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor)) &&
+          (!obj.title || typeof obj.title === "string")
         );
       }
 
@@ -434,43 +411,22 @@
 
       function sendTemplate() {
         const altText = document.getElementById("textBox1").value || "this is a buttons template";
+        const templateJson = document.getElementById("textBox2").value.trim();
+        if (!templateJson) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing Template JSON",
+            text: "Please provide a valid Template JSON in the second input.",
+          });
+          return;
+        }
         try {
-          const actionsJson = document.getElementById("textBox2").value;
-          let actions;
-          if (actionsJson.trim()) {
-            actions = JSON.parse(actionsJson);
-            if (!Array.isArray(actions)) {
-              throw new Error("Actions must be an array");
-            }
-          } else {
-            actions = [
-              {
-                type: "uri",
-                label: "ตรวจหวยงวดนี้",
-                uri: "https://liff.line.me/1454988218-NjbXbq18/v3/lottery/r/20250901"
-              },
-              {
-                type: "uri",
-                label: "เข้าหอสมุด",
-                uri: "https://cdn-path.github.io/library-checking.github.io"
-              }
-            ];
-          }
-          const templateObject = {
-            type: "buttons",
-            thumbnailImageUrl: "https://cdn.pixabay.com/photo/2014/09/03/20/15/shoes-434918__480.jpg",
-            imageAspectRatio: "square",
-            imageSize: "contain",
-            imageBackgroundColor: "#F99C9C",
-            title: document.getElementById("textBox1").value || "Choose an Option",
-            text: "Please select a link below",
-            actions: actions
-          };
+          const templateObject = JSON.parse(templateJson);
           if (!isValidButtonsTemplate(templateObject)) {
             Swal.fire({
               icon: "error",
               title: "Invalid Buttons Template structure",
-              text: "Please ensure your JSON actions follow the correct Buttons Template format.",
+              text: "Please ensure your JSON follows the correct Buttons Template format.",
             });
             return;
           }
@@ -481,10 +437,10 @@
           };
           sendMessage(messageObj);
         } catch (error) {
-          console.error("Error parsing Template actions JSON:", error);
+          console.error("Error parsing Template JSON:", error);
           Swal.fire({
             icon: "error",
-            title: "Invalid Template actions JSON",
+            title: "Invalid Template JSON",
             text: "Please check your JSON input.",
           });
         }
@@ -880,6 +836,7 @@
           text1: flexJson,
           userId: profile.userId,
           displayName: profile.displayName,
+          type: "flex"
         };
         Swal.fire({
           title: "กำลังบันทึกข้อมูล...",
@@ -936,6 +893,101 @@
         }
       }
 
+      async function saveTemplateToSupabase(retryCount = 0, maxRetries = 3) {
+        if (!profile || !profile.userId) {
+          Swal.fire({
+            icon: "error",
+            title: "โปรไฟล์ยังไม่โหลด",
+            text: "กรุณารอสักครู่แล้วลองใหม่",
+          });
+          return;
+        }
+        const templateJson = document.getElementById("textBox2").value;
+        const title = document.getElementById("textBox1").value;
+        if (!title.trim()) {
+          Swal.fire({
+            icon: "error",
+            title: "กรุณากรอกหัวข้อ",
+            text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
+          });
+          return;
+        }
+        let templateObj;
+        try {
+          templateObj = JSON.parse(templateJson);
+          if (!isValidButtonsTemplate(templateObj)) {
+            throw new Error("ไม่ใช่ Buttons Template ที่ถูกต้อง");
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "JSON ไม่ถูกต้อง",
+            text: `กรุณาตรวจสอบ JSON Template Message ของคุณ: ${error.message}`,
+          });
+          return;
+        }
+        const data = {
+          title: title,
+          text1: templateJson,
+          userId: profile.userId,
+          displayName: profile.displayName,
+          type: "template"
+        };
+        Swal.fire({
+          title: "กำลังบันทึกข้อมูล...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+        console.log("Saving data:", data);
+        try {
+          const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+          if (!response.ok) {
+            const text = await response.text();
+            let errorMessage = `Network response was not ok: ${response.status}`;
+            if (response.status === 400) {
+              errorMessage = `Invalid request: ${text}`;
+            } else if (response.status === 500) {
+              errorMessage = `Server error: ${text}`;
+            }
+            throw new Error(errorMessage);
+          }
+          const result = await response.json();
+          console.log("Save response:", result);
+          if (result.success) {
+            Swal.fire({
+              icon: "success",
+              title: "บันทึกข้อมูลเรียบร้อย!",
+              timer: 1500,
+              showConfirmButton: false,
+            });
+            clearInputs();
+            fetchDataList();
+          } else {
+            throw new Error(result.error || "Unknown error occurred");
+          }
+        } catch (error) {
+          console.error("Error saving data:", error);
+          if (retryCount < maxRetries) {
+            console.log(`Retrying saveTemplateToSupabase (${retryCount + 1}/${maxRetries})...`);
+            setTimeout(() => saveTemplateToSupabase(retryCount + 1, maxRetries), 1000);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+              text: error.message,
+            });
+          }
+        }
+      }
+
       async function fetchDataList(retryCount = 0, maxRetries = 3) {
         if (!profile || !profile.userId) {
           console.warn("Profile not loaded yet, skipping fetchDataList");
@@ -975,7 +1027,7 @@
                     <div class="btn-group">
                       <button class="btn btn-sm btn-primary" onclick="shareListItem('${item.id}')">แชร์</button>
                       <button class="btn btn-sm btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
-                      <button class="btn btn-sm btn-info" onclick="showFlexMessage('${item.id}')">แสดง</button>
+                      <button class="btn btn-sm btn-info" onclick="showMessage('${item.id}')">แสดง</button>
                     </div>
                   </div>
                 </div>
@@ -1007,13 +1059,13 @@
         }
       }
 
-      async function showFlexMessage(id, retryCount = 0, maxRetries = 1) {
-        console.log("Showing Flex Message for id:", id, "listData:", window.listData);
+      async function showMessage(id, retryCount = 0, maxRetries = 1) {
+        console.log("Showing message for id:", id, "listData:", window.listData);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            showFlexMessage(id, retryCount + 1, maxRetries);
+            showMessage(id, retryCount + 1, maxRetries);
           } else {
             Swal.fire({
               icon: "error",
@@ -1030,7 +1082,7 @@
         }
         const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
-          console.error("showFlexMessage: Item not found for id:", id);
+          console.error("showMessage: Item not found for id:", id);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อมูลได้",
@@ -1043,61 +1095,75 @@
           });
           return;
         }
-        if (!item.text1) {
-          console.error("showFlexMessage: Missing text1 for item:", item);
+        if (!item.text1 || !item.type) {
+          console.error("showMessage: Missing text1 or type for item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อมูลได้",
-            text: "ข้อมูล Flex Message ไม่สมบูรณ์",
+            text: "ข้อมูลข้อความไม่สมบูรณ์",
           });
           return;
         }
+        const flexContainer = document.getElementById("flex1");
+        if (!flexContainer) {
+          console.error("Flex container not found");
+          Swal.fire({
+            icon: "error",
+            title: "ข้อผิดพลาด",
+            text: "ไม่พบคอนเทนเนอร์สำหรับแสดงข้อความ",
+          });
+          return;
+        }
+        flexContainer.innerHTML = "";
         try {
-          const flexObj = JSON.parse(item.text1);
-          if (
-            flexObj &&
-            (flexObj.type === "flex" ||
-              flexObj.type === "carousel" ||
-              flexObj.type === "bubble")
-          ) {
+          const obj = JSON.parse(item.text1);
+          if (item.type === "flex") {
+            if (!isValidFlexMessage(obj)) {
+              throw new Error("Invalid Flex message structure");
+            }
             let flexMessage;
-            if (flexObj.type === "carousel" || flexObj.type === "bubble") {
+            if (obj.type === "carousel" || obj.type === "bubble") {
               flexMessage = {
                 type: "flex",
                 altText: item.title || "Flex Message",
-                contents: flexObj,
+                contents: obj,
               };
             } else {
-              flexMessage = flexObj;
+              flexMessage = obj;
             }
-            const flexContainer = document.getElementById("flex1");
-            if (flexContainer) {
-              flexContainer.innerHTML = "";
-              if (typeof flex2html === "function") {
-                flex2html("flex1", flexMessage);
-                flexContainer.style.display = "block";
-                flexContainer.classList.remove("bg-white", "p-2", "rounded");
-                flexContainer.scrollIntoView({ behavior: "smooth" });
-              } else {
-                console.error("flex2html function is not available");
-                flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
-              }
+            if (typeof flex2html === "function") {
+              flex2html("flex1", flexMessage);
+              flexContainer.style.display = "block";
+              flexContainer.classList.remove("bg-white", "p-2", "rounded");
+              flexContainer.scrollIntoView({ behavior: "smooth" });
             } else {
-              console.error("Flex container not found");
-              Swal.fire({
-                icon: "error",
-                title: "ข้อผิดพลาด",
-                text: "ไม่พบคอนเทนเนอร์สำหรับแสดง Flex Message",
-              });
+              console.error("flex2html function is not available");
+              flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
+          } else if (item.type === "template") {
+            if (!isValidButtonsTemplate(obj)) {
+              throw new Error("Invalid Buttons Template structure");
+            }
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
+                <div class="text">${escapeHtml(obj.text)}</div>
+                ${obj.actions.map(action => `
+                  <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                `).join('')}
+              </div>
+            `;
+            flexContainer.style.display = "block";
+            flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
-            throw new Error("Invalid Flex message structure");
+            throw new Error("Unknown message type");
           }
         } catch (e) {
-          console.error("Error parsing or displaying Flex JSON:", e, "item:", item);
+          console.error("Error parsing or displaying message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
-            title: "ไม่สามารถแสดง Flex message ได้",
+            title: "ไม่สามารถแสดงข้อความได้",
             text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
           });
         }
@@ -1230,42 +1296,49 @@
           });
           return;
         }
-        if (!item.text1) {
-          console.error("shareListItem: Missing text1 for item:", item);
+        if (!item.text1 || !item.type) {
+          console.error("shareListItem: Missing text1 or type for item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแชร์ข้อมูลได้",
-            text: "ข้อมูล Flex Message ไม่สมบูรณ์",
+            text: "ข้อมูลข้อความไม่สมบูรณ์",
           });
           return;
         }
         try {
-          let flexObj = JSON.parse(item.text1);
-          if (
-            flexObj &&
-            (flexObj.type === "flex" ||
-              flexObj.type === "carousel" ||
-              flexObj.type === "bubble")
-          ) {
-            let messageObj;
-            if (flexObj.type === "carousel" || flexObj.type === "bubble") {
+          const obj = JSON.parse(item.text1);
+          let messageObj;
+          if (item.type === "flex") {
+            if (!isValidFlexMessage(obj)) {
+              throw new Error("Invalid Flex message structure");
+            }
+            if (obj.type === "carousel" || obj.type === "bubble") {
               messageObj = {
                 type: "flex",
                 altText: item.title || "Flex Message",
-                contents: flexObj,
+                contents: obj,
               };
             } else {
-              messageObj = flexObj;
+              messageObj = obj;
             }
-            sendMessage(messageObj);
+          } else if (item.type === "template") {
+            if (!isValidButtonsTemplate(obj)) {
+              throw new Error("Invalid Buttons Template structure");
+            }
+            messageObj = {
+              type: "template",
+              altText: item.title || "Buttons Template",
+              template: obj
+            };
           } else {
-            throw new Error("Invalid Flex message structure");
+            throw new Error("Unknown message type");
           }
+          sendMessage(messageObj);
         } catch (e) {
-          console.error("Error parsing or sending Flex JSON:", e, "item:", item);
+          console.error("Error parsing or sending message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
-            title: "ไม่สามารถส่ง Flex message ได้",
+            title: "ไม่สามารถส่งข้อความได้",
             text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
           });
         }
