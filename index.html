@@ -468,29 +468,61 @@
       }
 
       function sendTemplate() {
-        const altText = document.getElementById("textBox1").value || "this is a template message";
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
           Swal.fire({
             icon: "error",
-            title: "Missing Template JSON",
-            text: "Please provide a valid Template JSON in the second input.",
+            title: "Missing Message JSON",
+            text: "Please provide a valid message JSON in the second input.",
           });
           return;
         }
         try {
-          const template = JSON.parse(templateJson);
-          const messageObj = {
-            type: "template",
-            altText: altText,
-            template: template,
-          };
-          sendMessage(messageObj);
+          const messageObj = JSON.parse(templateJson);
+          liff.ready.then(() => {
+            liff
+              .shareTargetPicker([messageObj])
+              .then((result) => {
+                if (result && result.status === "success") {
+                  Swal.fire({
+                    icon: "success",
+                    title: "ส่งข้อความเรียบร้อย!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                  document.getElementById("textBox1").value = "";
+                  document.getElementById("textBox2").value = "";
+                } else if (result && result.status === "cancel") {
+                  Swal.fire({
+                    icon: "info",
+                    title: "คุณยกเลิกการแชร์",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } else {
+                  console.warn("Unexpected shareTargetPicker result:", result);
+                  Swal.fire({
+                    icon: "info",
+                    title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error("Error sending template message:", error);
+                Swal.fire({
+                  icon: "error",
+                  title: "เกิดข้อผิดพลาดในการส่งข้อความ",
+                  text: error.message,
+                });
+              });
+          });
         } catch (err) {
-          console.error("Error parsing Template JSON:", err);
+          console.error("Error parsing Message JSON:", err);
           Swal.fire({
             icon: "error",
-            title: "Invalid Template JSON",
+            title: "Invalid Message JSON",
             text: `Please check your JSON input: ${err.message}`,
           });
         }
