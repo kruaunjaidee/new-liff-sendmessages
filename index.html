@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
   <head>
@@ -302,6 +303,7 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
+      window.currentItemId = null; // Track the ID of the item being edited
 
       liff
         .init({ liffId })
@@ -393,7 +395,6 @@
           if (!isValidTemplateMessage(templateObject)) {
             throw new Error("Invalid Template message structure: Must have a 'type' field and valid JSON structure");
           }
-          // Try rendering known template types
           if (templateObject.type === "buttons") {
             flexContainer.innerHTML = `
               <div id="template-preview">
@@ -447,7 +448,6 @@
               </div>
             `;
           } else {
-            // Fallback for unrecognized template types: show JSON
             flexContainer.innerHTML = `
               <div id="template-preview">
                 <p>Unrecognized template type: ${escapeHtml(templateObject.type)}</p>
@@ -462,11 +462,9 @@
       }
 
       function isValidTemplateMessage(obj) {
-        // Minimal validation: ensure it's an object with a 'type' field
         if (!obj || typeof obj !== "object" || !obj.type || typeof obj.type !== "string") {
           return false;
         }
-        // Allow any template type as long as it's valid JSON and has a type
         return true;
       }
 
@@ -548,6 +546,7 @@
             document.getElementById("showtext").textContent = "";
             document.getElementById("flex1").style.display = "none";
             document.getElementById("showtext").style.display = "none";
+            window.currentItemId = null; // Clear the current item ID
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
@@ -898,6 +897,7 @@
           return;
         }
         const data = {
+          id: window.currentItemId || undefined, // Include id for updates
           title: title,
           text1: flexJson,
           userId: profile.userId,
@@ -905,7 +905,7 @@
           type: "flex"
         };
         Swal.fire({
-          title: "กำลังบันทึกข้อมูล...",
+          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
@@ -913,8 +913,9 @@
         });
         console.log("Saving data:", data);
         try {
+          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: "POST",
+            method: method,
             headers: {
               "Content-Type": "application/json",
             },
@@ -935,10 +936,11 @@
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: "บันทึกข้อมูลเรียบร้อย!",
+              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
+            window.currentItemId = null; // Clear after saving
             clearInputs();
             fetchDataList();
           } else {
@@ -994,6 +996,7 @@
           return;
         }
         const data = {
+          id: window.currentItemId || undefined, // Include id for updates
           title: title,
           text1: templateJson,
           userId: profile.userId,
@@ -1001,7 +1004,7 @@
           type: "template"
         };
         Swal.fire({
-          title: "กำลังบันทึกข้อมูล...",
+          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
@@ -1009,8 +1012,9 @@
         });
         console.log("Saving data:", data);
         try {
+          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: "POST",
+            method: method,
             headers: {
               "Content-Type": "application/json",
             },
@@ -1031,10 +1035,11 @@
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: "บันทึกข้อมูลเรียบร้อย!",
+              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
+            window.currentItemId = null; // Clear after saving
             clearInputs();
             fetchDataList();
           } else {
@@ -1172,6 +1177,11 @@
           });
           return;
         }
+
+        // Populate textBox1 and textBox2 for editing
+        document.getElementById("textBox1").value = item.title || "";
+        document.getElementById("textBox2").value = item.text1;
+        window.currentItemId = id; // Set the current item ID for updates
 
         const flexContainer = document.getElementById("flex1");
         if (!flexContainer) {
@@ -1357,6 +1367,7 @@
               .then(() => {
                 Swal.fire("ลบแล้ว!", "รายการได้ถูกลบเรียบร้อยแล้ว", "success");
                 fetchDataList();
+                window.currentItemId = null; // Clear current item ID after deletion
               })
               .catch((error) => {
                 console.error("Error deleting item:", error);
@@ -1502,6 +1513,7 @@
         const textBox2 = document.getElementById("textBox2");
         if (textBox1) textBox1.value = "";
         if (textBox2) textBox2.value = "";
+        window.currentItemId = null; // Clear current item ID
       }
     </script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -1509,3 +1521,4 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </body>
 </html>
+```
