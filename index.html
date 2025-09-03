@@ -1522,49 +1522,51 @@
       }
 
       function sendMessage(messageObj) {
-        if (liff.isApiAvailable("shareTargetPicker")) {
-          liff
-            .shareTargetPicker([messageObj])
-            .then((result) => {
-              if (result && result.status === "success") {
+        liff.ready.then(() => {
+          if (liff.isApiAvailable("shareTargetPicker")) {
+            liff
+              .shareTargetPicker([messageObj])
+              .then((result) => {
+                if (result && result.status === "success") {
+                  Swal.fire({
+                    icon: "success",
+                    title: "ส่งข้อความเรียบร้อย!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } else if (result && result.status === "cancel") {
+                  Swal.fire({
+                    icon: "info",
+                    title: "คุณยกเลิกการแชร์",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                } else {
+                  console.warn("Unexpected shareTargetPicker result:", result);
+                  Swal.fire({
+                    icon: "info",
+                    title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                }
+              })
+              .catch((error) => {
+                console.error("Error sending message:", error);
                 Swal.fire({
-                  icon: "success",
-                  title: "ส่งข้อความเรียบร้อย!",
-                  timer: 1500,
-                  showConfirmButton: false,
+                  icon: "error",
+                  title: "เกิดข้อผิดพลาดในการส่งข้อความ",
+                  text: error.message,
                 });
-              } else if (result && result.status === "cancel") {
-                Swal.fire({
-                  icon: "info",
-                  title: "คุณยกเลิกการแชร์",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else {
-                console.warn("Unexpected shareTargetPicker result:", result);
-                Swal.fire({
-                  icon: "info",
-                  title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              }
-            })
-            .catch((error) => {
-              console.error("Error sending message:", error);
-              Swal.fire({
-                icon: "error",
-                title: "เกิดข้อผิดพลาดในการส่งข้อความ",
-                text: error.message,
               });
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "ฟีเจอร์นี้ไม่รองรับ",
+              text: "แอพพลิเคชันนี้ไม่รองรับการแชร์ข้อความ",
             });
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "ฟีเจอร์นี้ไม่รองรับ",
-            text: "แอพพลิเคชันนี้ไม่รองรับการแชร์ข้อความ",
-          });
-        }
+          }
+        });
       }
 
       function clearInputs() {
