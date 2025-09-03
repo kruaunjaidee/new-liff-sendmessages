@@ -137,6 +137,13 @@
         font-size: 1.1rem;
         margin-bottom: 0;
       }
+      #dataList .card-body a {
+        color: #00c4b4;
+        text-decoration: underline;
+      }
+      #dataList .card-body a:hover {
+        color: #007bff;
+      }
       #dataList .btn-group .btn {
         padding: 5px 10px;
         font-size: 0.9rem;
@@ -1518,13 +1525,30 @@
         if (liff.isApiAvailable("shareTargetPicker")) {
           liff
             .shareTargetPicker([messageObj])
-            .then(() => {
-              Swal.fire({
-                icon: "success",
-                title: "ส่งข้อความเรียบร้อย!",
-                timer: 1500,
-                showConfirmButton: false,
-              });
+            .then((result) => {
+              if (result && result.status === "success") {
+                Swal.fire({
+                  icon: "success",
+                  title: "ส่งข้อความเรียบร้อย!",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              } else if (result && result.status === "cancel") {
+                Swal.fire({
+                  icon: "info",
+                  title: "คุณยกเลิกการแชร์",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              } else {
+                console.warn("Unexpected shareTargetPicker result:", result);
+                Swal.fire({
+                  icon: "info",
+                  title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              }
             })
             .catch((error) => {
               console.error("Error sending message:", error);
