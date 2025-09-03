@@ -110,6 +110,10 @@
         background-color: #ff6b6b;
         border-color: #ff6b6b;
       }
+      .btn-format {
+        background-color: #28a745;
+        border-color: #28a745;
+      }
       .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
@@ -285,6 +289,9 @@
         <button class="btn btn-secondary" onclick="clearText()">
           ล้างข้อความทั้งหมด
         </button>
+        <button class="btn btn-format" onclick="formatJson()">
+          จัดรูปแบบ JSON
+        </button>
       </div>
       <div class="mt-3">
         <button class="btn btn-success w-100" onclick="saveToSupabase()">
@@ -302,7 +309,7 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
-      window.currentItemId = null; // Track the ID of the item being edited
+      window.currentItemId = null;
 
       liff
         .init({ liffId })
@@ -337,6 +344,36 @@
       function toggleMessageDisplay(elementId) {
         const element = document.getElementById(elementId);
         element.style.display = element.style.display === "none" ? "block" : "none";
+      }
+
+      function formatJson() {
+        const textBox2 = document.getElementById("textBox2");
+        const jsonInput = textBox2.value.trim();
+        if (!jsonInput) {
+          Swal.fire({
+            icon: "error",
+            title: "ไม่มี JSON ให้จัดรูปแบบ",
+            text: "กรุณากรอก JSON ในช่องข้อมูลที่ 2",
+          });
+          return;
+        }
+        try {
+          const jsonObj = JSON.parse(jsonInput);
+          textBox2.value = JSON.stringify(jsonObj, null, 2);
+          Swal.fire({
+            icon: "success",
+            title: "จัดรูปแบบ JSON สำเร็จ!",
+            timer: 1000,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          console.error("Error formatting JSON:", error);
+          Swal.fire({
+            icon: "error",
+            title: "JSON ไม่ถูกต้อง",
+            text: `ไม่สามารถจัดรูปแบบได้: ${error.message}`,
+          });
+        }
       }
 
       function showImage() {
@@ -545,7 +582,7 @@
             document.getElementById("showtext").textContent = "";
             document.getElementById("flex1").style.display = "none";
             document.getElementById("showtext").style.display = "none";
-            window.currentItemId = null; // Clear the current item ID
+            window.currentItemId = null;
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
@@ -896,7 +933,7 @@
           return;
         }
         const data = {
-          id: window.currentItemId || undefined, // Include id for updates
+          id: window.currentItemId || undefined,
           title: title,
           text1: flexJson,
           userId: profile.userId,
@@ -939,7 +976,7 @@
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null; // Clear after saving
+            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -995,7 +1032,7 @@
           return;
         }
         const data = {
-          id: window.currentItemId || undefined, // Include id for updates
+          id: window.currentItemId || undefined,
           title: title,
           text1: templateJson,
           userId: profile.userId,
@@ -1038,7 +1075,7 @@
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null; // Clear after saving
+            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -1177,10 +1214,9 @@
           return;
         }
 
-        // Populate textBox1 and textBox2 for editing
         document.getElementById("textBox1").value = item.title || "";
         document.getElementById("textBox2").value = item.text1;
-        window.currentItemId = id; // Set the current item ID for updates
+        window.currentItemId = id;
 
         const flexContainer = document.getElementById("flex1");
         if (!flexContainer) {
@@ -1366,7 +1402,7 @@
               .then(() => {
                 Swal.fire("ลบแล้ว!", "รายการได้ถูกลบเรียบร้อยแล้ว", "success");
                 fetchDataList();
-                window.currentItemId = null; // Clear current item ID after deletion
+                window.currentItemId = null;
               })
               .catch((error) => {
                 console.error("Error deleting item:", error);
@@ -1512,7 +1548,7 @@
         const textBox2 = document.getElementById("textBox2");
         if (textBox1) textBox1.value = "";
         if (textBox2) textBox2.value = "";
-        window.currentItemId = null; // Clear current item ID
+        window.currentItemId = null;
       }
     </script>
     <script src="https://unpkg.com/html5-qrcode"></script>
