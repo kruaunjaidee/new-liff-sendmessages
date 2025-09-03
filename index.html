@@ -150,22 +150,19 @@
       #template-preview .text {
         margin-bottom: 10px;
       }
-      #template-preview .action-btn {
+      #template-preview .action-link {
         display: block;
         margin: 5px 0;
-        padding: 10px;
-        background-color: #00c4b4;
-        color: white;
-        text-align: center;
-        border-radius: 5px;
-        text-decoration: none;
+        color: #00c4b4;
+        text-decoration: underline;
       }
-      #template-preview .confirm-buttons {
+      #template-preview .action-link:hover {
+        color: #007bff;
+      }
+      #template-preview .confirm-links {
         display: flex;
-        justify-content: space-between;
-      }
-      #template-preview .confirm-buttons .action-btn {
-        width: 48%;
+        flex-direction: column;
+        gap: 5px;
       }
       #template-preview .carousel {
         display: flex;
@@ -404,7 +401,7 @@
                 ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
                 <div class="text">${escapeHtml(templateObject.text || '')}</div>
                 ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                  <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                  <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                 `).join('') : ''}
               </div>
             `;
@@ -412,9 +409,9 @@
             flexContainer.innerHTML = `
               <div id="template-preview">
                 <div class="text">${escapeHtml(templateObject.text || '')}</div>
-                <div class="confirm-buttons">
+                <div class="confirm-links">
                   ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                   `).join('') : ''}
                 </div>
               </div>
@@ -429,7 +426,7 @@
                       ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
                       <div class="text">${escapeHtml(column.text || '')}</div>
                       ${column.actions && Array.isArray(column.actions) ? column.actions.map(action => `
-                        <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                        <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                       `).join('') : ''}
                     </div>
                   `).join('') : ''}
@@ -443,7 +440,7 @@
                   ${templateObject.columns && Array.isArray(templateObject.columns) ? templateObject.columns.map(column => `
                     <div class="carousel-item">
                       <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                      <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-btn">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
+                      <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
                     </div>
                   `).join('') : ''}
                 </div>
@@ -892,6 +889,7 @@
             throw new Error("ไม่ใช่ Flex Message ที่ถูกต้อง");
           }
         } catch (error) {
+          console.error("Error parsing Flex JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
@@ -987,6 +985,7 @@
             throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง: ต้องมีฟิลด์ 'type'");
           }
         } catch (error) {
+          console.error("Error parsing Template JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
@@ -1133,21 +1132,21 @@
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            showMessage(id, retryCount + 1, maxRetries);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถโหลดข้อมูลได้",
-              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-              confirmButtonText: "รีเฟรช",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetchDataList();
-              }
-            });
+            return showMessage(id, retryCount + 1, maxRetries);
           }
+          Swal.fire({
+            icon: "error",
+            title: "ไม่สามารถโหลดข้อมูลได้",
+            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+            confirmButtonText: "รีเฟรช",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              fetchDataList();
+            }
+          });
           return;
         }
+
         const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("showMessage: Item not found for id:", id);
@@ -1163,6 +1162,7 @@
           });
           return;
         }
+
         if (!item.text1 || !item.type) {
           console.error("showMessage: Missing text1 or type for item:", item);
           Swal.fire({
@@ -1172,6 +1172,7 @@
           });
           return;
         }
+
         const flexContainer = document.getElementById("flex1");
         if (!flexContainer) {
           console.error("Flex container not found");
@@ -1182,9 +1183,12 @@
           });
           return;
         }
+
         flexContainer.innerHTML = "";
         try {
           const obj = JSON.parse(item.text1);
+          console.log("Parsed message object:", obj);
+
           if (item.type === "flex") {
             if (!isValidFlexMessage(obj)) {
               throw new Error("Invalid Flex message structure");
@@ -1219,7 +1223,7 @@
                   ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
                   <div class="text">${escapeHtml(obj.text || '')}</div>
                   ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map(action => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                   `).join('') : ''}
                 </div>
               `;
@@ -1227,9 +1231,9 @@
               flexContainer.innerHTML = `
                 <div id="template-preview">
                   <div class="text">${escapeHtml(obj.text || '')}</div>
-                  <div class="confirm-buttons">
+                  <div class="confirm-links">
                     ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map(action => `
-                      <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                      <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                     `).join('') : ''}
                   </div>
                 </div>
@@ -1244,7 +1248,7 @@
                         ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
                         <div class="text">${escapeHtml(column.text || '')}</div>
                         ${column.actions && Array.isArray(column.actions) ? column.actions.map(action => `
-                          <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                          <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
                         `).join('') : ''}
                       </div>
                     `).join('') : ''}
@@ -1258,7 +1262,7 @@
                     ${obj.columns && Array.isArray(obj.columns) ? obj.columns.map(column => `
                       <div class="carousel-item">
                         <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                        <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-btn">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
+                        <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
                       </div>
                     `).join('') : ''}
                   </div>
@@ -1278,7 +1282,7 @@
             throw new Error("Unknown message type");
           }
         } catch (e) {
-          console.error("Error parsing or displaying message JSON:", e, "item:", item);
+          console.error("Error in showMessage:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อความได้",
@@ -1384,21 +1388,21 @@
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            shareListItem(id, retryCount + 1, maxRetries);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถโหลดข้อมูลได้",
-              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-              confirmButtonText: "รีเฟรช",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetchDataList();
-              }
-            });
+            return shareListItem(id, retryCount + 1, maxRetries);
           }
+          Swal.fire({
+            icon: "error",
+            title: "ไม่สามารถโหลดข้อมูลได้",
+            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+            confirmButtonText: "รีเฟรช",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              fetchDataList();
+            }
+          });
           return;
         }
+
         const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("shareListItem: Item not found for id:", id);
@@ -1414,6 +1418,7 @@
           });
           return;
         }
+
         if (!item.text1 || !item.type) {
           console.error("shareListItem: Missing text1 or type for item:", item);
           Swal.fire({
@@ -1423,6 +1428,7 @@
           });
           return;
         }
+
         try {
           const obj = JSON.parse(item.text1);
           let messageObj;
@@ -1453,7 +1459,7 @@
           }
           sendMessage(messageObj);
         } catch (e) {
-          console.error("Error parsing or sending message JSON:", e, "item:", item);
+          console.error("Error in shareListItem:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถส่งข้อความได้",
