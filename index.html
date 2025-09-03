@@ -480,15 +480,6 @@
         }
         try {
           const template = JSON.parse(templateJson);
-          console.log("Parsed template:", template);
-          if (!isValidTemplateMessage(template)) {
-            Swal.fire({
-              icon: "error",
-              title: "Invalid Template structure",
-              text: "Please ensure your JSON has a valid 'type' field (buttons, confirm, carousel, or image_carousel).",
-            });
-            return;
-          }
           const messageObj = {
             type: "template",
             altText: altText,
@@ -715,81 +706,17 @@
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          if (!isValidTemplateMessage(templateObject)) {
-            throw new Error("Invalid Template message structure: Must have a 'type' field");
-          }
-          if (templateObject.type === "buttons") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
-                <div class="text">${escapeHtml(templateObject.text || '')}</div>
-                ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                  <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                `).join('') : ''}
-              </div>
-            `;
-          } else if (templateObject.type === "confirm") {
-            flexColl
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="text">${escapeHtml(templateObject.text || '')}</div>
-                <div class="confirm-links">
-                  ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else if (templateObject.type === "carousel") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="carousel">
-                  ${templateObject.columns && Array.isArray(templateObject.columns) ? templateObject.columns.map(column => `
-                    <div class="carousel-item">
-                      ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                      ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
-                      <div class="text">${escapeHtml(column.text || '')}</div>
-                      ${column.actions && Array.isArray(column.actions) ? column.actions.map(action => `
-                        <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                      `).join('') : ''}
-                    </div>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else if (templateObject.type === "image_carousel") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="carousel">
-                  ${templateObject.columns && Array.isArray(templateObject.columns) ? templateObject.columns.map(column => `
-                    <div class="carousel-item">
-                      <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                      <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
-                    </div>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <p>Unrecognized template type: ${escapeHtml(templateObject.type)}</p>
-                <pre class="json-fallback">${escapeHtml(JSON.stringify(templateObject, null, 2))}</pre>
-              </div>
-            `;
-          }
+          flexContainer.innerHTML = `
+            <div id="template-preview">
+              <pre class="json-fallback">${escapeHtml(JSON.stringify(templateObject, null, 2))}</pre>
+            </div>
+          `;
+          flexContainer.style.display = "block";
+          flexContainer.scrollIntoView({ behavior: "smooth" });
         } catch (error) {
           console.error("Error parsing Template JSON:", error);
           flexContainer.innerHTML = `<p class="text-danger">Invalid Template JSON: ${error.message}</p>`;
         }
-      }
-
-      function isValidTemplateMessage(obj) {
-        if (!obj || typeof obj !== "object" || !obj.type || typeof obj.type !== "string") {
-          return false;
-        }
-        return ["buttons", "confirm", "carousel", "image_carousel"].includes(obj.type);
       }
 
       function isValidFlexMessage(obj) {
@@ -1045,9 +972,6 @@
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
-          if (!isValidTemplateMessage(templateObj)) {
-            throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง: ต้องมีฟิลด์ 'type'");
-          }
         } catch (error) {
           console.error("Error parsing Template JSON:", error);
           Swal.fire({
@@ -1269,69 +1193,11 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            if (!isValidTemplateMessage(obj)) {
-              throw new Error("Invalid Template message structure: Must have a 'type' field");
-            }
-            if (obj.type === "buttons") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                  ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
-                  <div class="text">${escapeHtml(obj.text || '')}</div>
-                  ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map((action) => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                  `).join('') : ''}
-                </div>
-              `;
-            } else if (obj.type === "confirm") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="text">${escapeHtml(obj.text || '')}</div>
-                  <div class="confirm-links">
-                    ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map((action) => `
-                      <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else if (obj.type === "carousel") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="carousel">
-                    ${obj.columns && Array.isArray(obj.columns) ? obj.columns.map((column) => `
-                      <div class="carousel-item">
-                        ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                        ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
-                        <div class="text">${escapeHtml(column.text || '')}</div>
-                        ${column.actions && Array.isArray(column.actions) ? column.actions.map((action) => `
-                          <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                        `).join('') : ''}
-                      </div>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else if (obj.type === "image_carousel") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="carousel">
-                    ${obj.columns && Array.isArray(obj.columns) ? obj.columns.map((column) => `
-                      <div class="carousel-item">
-                        <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                        <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
-                      </div>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <p>Unrecognized template type: ${escapeHtml(obj.type)}</p>
-                  <pre class="json-fallback">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>
-                </div>
-              `;
-            }
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                <pre class="json-fallback">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>
+              </div>
+            `;
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
@@ -1497,9 +1363,6 @@
               messageObj = obj;
             }
           } else if (item.type === "template") {
-            if (!isValidTemplateMessage(obj)) {
-              throw new Error("Invalid Template message structure: Must have a 'type' field");
-            }
             messageObj = {
               type: "template",
               altText: item.title || "Template Message",
