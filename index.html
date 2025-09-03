@@ -160,7 +160,6 @@
         border-radius: 5px;
         text-decoration: none;
       }
-    
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -359,50 +358,33 @@
       function showTemplate() {
         const flexContainer = document.getElementById("flex1");
         flexContainer.innerHTML = "";
+        const altText = document.getElementById("textBox1").value.trim();
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
-          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Template JSON in the second input.</p>';
+          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid JSON in the second input.</p>';
           return;
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          if (!isValidButtonsTemplate(templateObject)) {
-            throw new Error("Invalid Buttons Template structure");
-          }
+          const templateMessage = {
+            type: "template",
+            altText: altText || "Template Message",
+            template: templateObject
+          };
           flexContainer.innerHTML = `
             <div id="template-preview">
               ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
               ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
-              <div class="text">${escapeHtml(templateObject.text)}</div>
-              ${templateObject.actions.map(action => `
-                <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
-              `).join('')}
+              ${templateObject.text ? `<div class="text">${escapeHtml(templateObject.text)}</div>` : ''}
+              ${Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
+                <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+              `).join('') : ''}
             </div>
           `;
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
-          flexContainer.innerHTML = '<p class="text-danger">Invalid Template JSON. Please check your input.</p>';
+          console.error("Error parsing JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
         }
-      }
-
-      function isValidButtonsTemplate(obj) {
-        return (
-          obj &&
-          obj.type === "buttons" &&
-          typeof obj.text === "string" &&
-          Array.isArray(obj.actions) &&
-          obj.actions.every(action => 
-            action.type === "uri" && 
-            typeof action.label === "string" && 
-            typeof action.uri === "string" &&
-            action.uri.startsWith("http")
-          ) &&
-          (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
-          (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
-          (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
-          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor)) &&
-          (!obj.title || typeof obj.title === "string")
-        );
       }
 
       function isValidStickerMessage(packageId, stickerId) {
@@ -888,9 +870,9 @@
           });
           return;
         }
-        const templateJson = document.getElementById("textBox2").value;
-        const title = document.getElementById("textBox1").value;
-        if (!title.trim()) {
+        const templateJson = document.getElementById("textBox2").value.trim();
+        const title = document.getElementById("textBox1").value.trim();
+        if (!title) {
           Swal.fire({
             icon: "error",
             title: "กรุณากรอกหัวข้อ",
@@ -898,17 +880,22 @@
           });
           return;
         }
+        if (!templateJson) {
+          Swal.fire({
+            icon: "error",
+            title: "กรุณากรอก JSON",
+            text: "JSON ไม่สามารถเป็นค่าว่างได้",
+          });
+          return;
+        }
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
-          if (!isValidButtonsTemplate(templateObj)) {
-            throw new Error("ไม่ใช่ Buttons Template ที่ถูกต้อง");
-          }
         } catch (error) {
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
-            text: `กรุณาตรวจสอบ JSON Template Message ของคุณ: ${error.message}`,
+            text: `กรุณาตรวจสอบ JSON ของคุณ: ${error.message}`,
           });
           return;
         }
@@ -1127,17 +1114,19 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            if (!isValidButtonsTemplate(obj)) {
-              throw new Error("Invalid Buttons Template structure");
-            }
+            const templateMessage = {
+              type: "template",
+              altText: item.title || "Template Message",
+              template: obj
+            };
             flexContainer.innerHTML = `
               <div id="template-preview">
                 ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
                 ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
-                <div class="text">${escapeHtml(obj.text)}</div>
-                ${obj.actions.map(action => `
-                  <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
-                `).join('')}
+                ${obj.text ? `<div class="text">${escapeHtml(obj.text)}</div>` : ''}
+                ${Array.isArray(obj.actions) ? obj.actions.map(action => `
+                  <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
+                `).join('') : ''}
               </div>
             `;
             flexContainer.style.display = "block";
@@ -1292,6 +1281,7 @@
           return;
         }
         try {
+          document.getElementById("textBox2").value = item.text1;
           const messageObj = JSON.parse(item.text1);
           sendMessage(messageObj);
         } catch (e) {
