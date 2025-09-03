@@ -110,10 +110,6 @@
         background-color: #ff6b6b;
         border-color: #ff6b6b;
       }
-      .btn-format {
-        background-color: #28a745;
-        border-color: #28a745;
-      }
       .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
@@ -137,13 +133,6 @@
         font-size: 1.1rem;
         margin-bottom: 0;
       }
-      #dataList .card-body a {
-        color: #00c4b4;
-        text-decoration: underline;
-      }
-      #dataList .card-body a:hover {
-        color: #007bff;
-      }
       #dataList .btn-group .btn {
         padding: 5px 10px;
         font-size: 0.9rem;
@@ -161,41 +150,17 @@
       #template-preview .text {
         margin-bottom: 10px;
       }
-      #template-preview .action-link {
+      #template-preview .action-btn {
         display: block;
         margin: 5px 0;
-        color: #00c4b4;
-        text-decoration: underline;
-      }
-      #template-preview .action-link:hover {
-        color: #007bff;
-      }
-      #template-preview .confirm-links {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      #template-preview .carousel {
-        display: flex;
-        overflow-x: auto;
-        gap: 10px;
-        padding-bottom: 10px;
-      }
-      #template-preview .carousel-item {
-        flex: 0 0 auto;
-        width: 250px;
-        background: #f5f5f5;
-        border-radius: 10px;
         padding: 10px;
+        background-color: #00c4b4;
+        color: white;
+        text-align: center;
+        border-radius: 5px;
+        text-decoration: none;
       }
-      #template-preview .json-fallback {
-        background: #f5f5f5;
-        padding: 10px;
-        border-radius: 10px;
-        white-space: pre-wrap;
-        font-family: monospace;
-        font-size: 0.9rem;
-      }
+    
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -215,8 +180,6 @@
       <center>
         <img id="pictureUrl" class="mb-2" alt="Profile Picture" />
         <p class="text-white mb-2" id="displayName"></p>
-        <p class="text-white mb-2" id="userId"></p>
-        <p class="text-white mb-2" id="statusMessage"></p>
       </center>
       <h2 class="text-white text-center">❤️ ShareTargetPicker ❤️</h2>
       <div class="mb-3">
@@ -231,7 +194,7 @@
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON template สำหรับ Template)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON actions สำหรับ Template)"
         ></textarea>
       </div>
       <div
@@ -298,22 +261,16 @@
         <button class="btn btn-secondary" onclick="clearText()">
           ล้างข้อความทั้งหมด
         </button>
-        <button class="btn btn-format" onclick="formatJson()">
-          จัดรูปแบบ JSON
-        </button>
-        <button class="btn btn-outline-light" onclick="goSimulator()">
-          Flex Simulator
-        </button>
       </div>
       <div class="mt-3">
         <button class="btn btn-success w-100" onclick="saveToSupabase()">
           บันทึก Flex Message
         </button>
-        <button class="btn btn-success w-100 mt-2 mb-3" onclick="saveTemplateToSupabase()">
+        <button class="btn btn-success w-100 mt-2" onclick="saveTemplateToSupabase()">
           บันทึก Template Message
         </button>
       </div>
-      <div id="dataList" class="mt-5 bg-white p-2 rounded"></div>
+      <div id="dataList" class="mt-3 bg-white p-2 rounded"></div>
     </div>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
@@ -321,13 +278,24 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
-      window.currentItemId = null;
 
       liff
         .init({ liffId })
         .then(() => {
           if (liff.isLoggedIn()) {
-            runApp();
+            liff.getProfile().then((p) => {
+              profile = p;
+              document.getElementById("pictureUrl").src = profile.pictureUrl;
+              document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
+              fetchDataList();
+            }).catch((err) => {
+              console.error("Error getting LINE profile:", err);
+              Swal.fire({
+                icon: "error",
+                title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
+                text: err.message,
+              });
+            });
           } else {
             liff.login();
           }
@@ -341,83 +309,22 @@
           });
         });
 
-      function runApp() {
-        liff.getProfile()
-          .then((p) => {
-            profile = p;
-            const pictureUrl = document.getElementById("pictureUrl");
-            const displayName = document.getElementById("displayName");
-            const userId = document.getElementById("userId");
-            const statusMessage = document.getElementById("statusMessage");
-            if (pictureUrl) pictureUrl.src = profile.pictureUrl || "https://via.placeholder.com/80?text=No+Image";
-            if (displayName) displayName.innerHTML = `<b>สวัสดี:</b> ${escapeHtml(profile.displayName || "Unknown User")}`;
-            if (userId) userId.innerHTML = `<b>UserId:</b> ${escapeHtml(profile.userId || "N/A")}`;
-            if (statusMessage) statusMessage.innerHTML = `<b>StatusMessage:</b> ${escapeHtml(profile.statusMessage || "No status")}`;
-            fetchDataList();
-          })
-          .catch((err) => {
-            console.error("Error getting LINE profile:", err);
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
-              text: err.message,
-            });
-          });
+      function toggleMessageDisplay(elementId) {
+        const element = document.getElementById(elementId);
+        element.style.display = element.style.display === "none" ? "block" : "none";
       }
 
-      async function scanQrCode() {
-        if (!liff.isInClient()) {
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถสแกน QR ได้",
-            text: "ฟังก์ชันสแกน QR ใช้งานได้เฉพาะในแอป LINE เท่านั้น",
-          });
-          return;
-        }
-        try {
-          const result = await liff.scanCodeV2();
-          const textBox2 = document.getElementById("textBox2");
-          if (textBox2) {
-            textBox2.value = result.value;
-            Swal.fire({
-              position: "center",
-              icon: "success",
-              title: "สแกน QR เรียบร้อย !",
-              text: `ค่าที่สแกนได้: ${result.value}`,
-              showConfirmButton: false,
-              timer: 1500,
-            });
-          } else {
-            console.error("Element textBox2 not found");
-            Swal.fire({
-              icon: "error",
-              title: "ข้อผิดพลาด",
-              text: "ไม่พบช่องกรอกข้อมูลที่ 2",
-            });
-          }
-        } catch (err) {
-          console.error("Error scanning QR code:", err);
-          Swal.fire({
-            icon: "error",
-            title: "เกิดข้อผิดพลาดในการสแกน QR",
-            text: err.message,
-          });
-        }
+      function showImage() {
+        const src = document.getElementById("textBox2").value;
+        document.getElementById("flex1").innerHTML = `<img src="${src}" alt="Shared Image">`;
       }
 
       function showFlex() {
         const flexContainer = document.getElementById("flex1");
-        const flexJson = document.getElementById("textBox2").value.trim();
-        if (!flexJson) {
-          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Flex JSON in the second input.</p>';
-          return;
-        }
         flexContainer.innerHTML = "";
         try {
+          const flexJson = document.getElementById("textBox2").value;
           const flexObject = JSON.parse(flexJson);
-          if (!isValidFlexMessage(flexObject)) {
-            throw new Error("Invalid Flex message structure");
-          }
           const flexMessage = {
             type: "flex",
             altText: "Flex Message",
@@ -429,42 +336,77 @@
             console.error("flex2html function is not available");
             flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
           }
-        } catch (err) {
-          console.error("Error parsing Flex JSON:", err);
-          flexContainer.innerHTML = `<p class="text-danger">Invalid Flex JSON: ${err.message}</p>`;
+        } catch (error) {
+          console.error("Error parsing Flex JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid Flex JSON. Please check your input.</p>';
         }
       }
 
       function showText() {
         const showTextElement = document.getElementById("showtext");
-        const text = document.getElementById("textBox2").value.trim();
-        if (!showTextElement) {
-          console.error("Element showtext not found");
-          return;
-        }
-        showTextElement.textContent = text || "No text provided";
+        showTextElement.textContent = document.getElementById("textBox2").value;
       }
 
-      function showImage() {
+      function showSticker() {
         const flexContainer = document.getElementById("flex1");
-        const src = document.getElementById("textBox2").value.trim();
-        if (!src) {
-          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid image URL in the second input.</p>';
+        flexContainer.innerHTML = "";
+        const packageId = document.getElementById("textBox1").value || "11537";
+        const stickerId = document.getElementById("textBox2").value || "52002734";
+        const stickerUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${stickerId}/android/sticker.png`;
+        flexContainer.innerHTML = `<img src="${stickerUrl}" alt="Sticker (packageId: ${packageId}, stickerId: ${stickerId})" style="max-width: 200px;" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Sticker+Not+Found';">`;
+      }
+
+      function showTemplate() {
+        const flexContainer = document.getElementById("flex1");
+        flexContainer.innerHTML = "";
+        const templateJson = document.getElementById("textBox2").value.trim();
+        if (!templateJson) {
+          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Template JSON in the second input.</p>';
           return;
         }
-        flexContainer.innerHTML = "";
         try {
-          const img = document.createElement("img");
-          img.src = src;
-          img.setAttribute("width", "100%");
-          img.onerror = () => {
-            img.src = "https://via.placeholder.com/300?text=Image+Not+Found";
-          };
-          flexContainer.appendChild(img);
-        } catch (err) {
-          console.error("Error displaying image:", err);
-          flexContainer.innerHTML = `<p class="text-danger">Error displaying image: ${err.message}</p>`;
+          const templateObject = JSON.parse(templateJson);
+          if (!isValidButtonsTemplate(templateObject)) {
+            throw new Error("Invalid Buttons Template structure");
+          }
+          flexContainer.innerHTML = `
+            <div id="template-preview">
+              ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+              ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
+              <div class="text">${escapeHtml(templateObject.text)}</div>
+              ${templateObject.actions.map(action => `
+                <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+              `).join('')}
+            </div>
+          `;
+        } catch (error) {
+          console.error("Error parsing Template JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid Template JSON. Please check your input.</p>';
         }
+      }
+
+      function isValidButtonsTemplate(obj) {
+        return (
+          obj &&
+          obj.type === "buttons" &&
+          typeof obj.text === "string" &&
+          Array.isArray(obj.actions) &&
+          obj.actions.every(action => 
+            action.type === "uri" && 
+            typeof action.label === "string" && 
+            typeof action.uri === "string" &&
+            action.uri.startsWith("http")
+          ) &&
+          (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
+          (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
+          (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
+          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor)) &&
+          (!obj.title || typeof obj.title === "string")
+        );
+      }
+
+      function isValidStickerMessage(packageId, stickerId) {
+        return packageId && stickerId && /^\d+$/.test(packageId) && /^\d+$/.test(stickerId);
       }
 
       function sendTemplate() {
@@ -473,295 +415,21 @@
           Swal.fire({
             icon: "error",
             title: "Missing Message JSON",
-            text: "Please provide a valid message JSON in the second input.",
+            text: "Please provide a valid JSON in the second input.",
           });
           return;
         }
         try {
           const messageObj = JSON.parse(templateJson);
-          liff.ready.then(() => {
-            liff
-              .shareTargetPicker([messageObj])
-              .then((result) => {
-                if (result && result.status === "success") {
-                  Swal.fire({
-                    icon: "success",
-                    title: "ส่งข้อความเรียบร้อย!",
-                    timer: 1500,
-                    showConfirmButton: false,
-                  });
-                  document.getElementById("textBox1").value = "";
-                  document.getElementById("textBox2").value = "";
-                } else if (result && result.status === "cancel") {
-                  Swal.fire({
-                    icon: "info",
-                    title: "คุณยกเลิกการแชร์",
-                    timer: 1500,
-                    showConfirmButton: false,
-                  });
-                } else {
-                  console.warn("Unexpected shareTargetPicker result:", result);
-                  Swal.fire({
-                    icon: "info",
-                    title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
-                    timer: 1500,
-                    showConfirmButton: false,
-                  });
-                }
-              })
-              .catch((error) => {
-                console.error("Error sending template message:", error);
-                Swal.fire({
-                  icon: "error",
-                  title: "เกิดข้อผิดพลาดในการส่งข้อความ",
-                  text: error.message,
-                });
-              });
-          });
-        } catch (err) {
-          console.error("Error parsing Message JSON:", err);
+          sendMessage(messageObj);
+        } catch (error) {
+          console.error("Error parsing Message JSON:", error);
           Swal.fire({
             icon: "error",
             title: "Invalid Message JSON",
-            text: `Please check your JSON input: ${err.message}`,
+            text: `Please check your JSON input: ${error.message}`,
           });
         }
-      }
-
-      function sendFlex() {
-        const altText = document.getElementById("textBox1").value || "Flex Message";
-        const flexJson = document.getElementById("textBox2").value.trim();
-        if (!flexJson) {
-          Swal.fire({
-            icon: "error",
-            title: "Missing Flex JSON",
-            text: "Please provide a valid Flex JSON in the second input.",
-          });
-          return;
-        }
-        try {
-          const contents = JSON.parse(flexJson);
-          if (!isValidFlexMessage(contents)) {
-            Swal.fire({
-              icon: "error",
-              title: "Invalid Flex Message structure",
-              text: "Please ensure your JSON follows the correct Flex Message format.",
-            });
-            return;
-          }
-          const messageObj = {
-            type: "flex",
-            altText: altText,
-            contents: contents,
-          };
-          sendMessage(messageObj);
-        } catch (err) {
-          console.error("Error parsing Flex JSON:", err);
-          Swal.fire({
-            icon: "error",
-            title: "Invalid Flex JSON",
-            text: `Please check your JSON input: ${err.message}`,
-          });
-        }
-      }
-
-      function sendText() {
-        const text = document.getElementById("textBox2").value.trim();
-        if (!text) {
-          Swal.fire({
-            icon: "error",
-            title: "Missing Text",
-            text: "Please provide text in the second input.",
-          });
-          return;
-        }
-        const messageObj = {
-          type: "text",
-          text: text,
-        };
-        sendMessage(messageObj);
-      }
-
-      function sendImage() {
-        const originalContentUrl = document.getElementById("textBox1").value.trim();
-        const previewImageUrl = document.getElementById("textBox2").value.trim();
-        if (!originalContentUrl || !previewImageUrl) {
-          Swal.fire({
-            icon: "error",
-            title: "Missing Image URLs",
-            text: "Please provide both original and preview image URLs.",
-          });
-          return;
-        }
-        const messageObj = {
-          type: "image",
-          originalContentUrl: originalContentUrl,
-          previewImageUrl: previewImageUrl,
-        };
-        sendMessage(messageObj);
-      }
-
-      function sendVideo() {
-        const originalContentUrl = document.getElementById("textBox1").value.trim();
-        const previewImageUrl = document.getElementById("textBox2").value.trim();
-        if (!originalContentUrl || !previewImageUrl) {
-          Swal.fire({
-            icon: "error",
-            title: "Missing Video URLs",
-            text: "Please provide both video URL and preview image URL.",
-          });
-          return;
-        }
-        const messageObj = {
-          type: "video",
-          originalContentUrl: originalContentUrl,
-          previewImageUrl: previewImageUrl,
-        };
-        sendMessage(messageObj);
-      }
-
-      function sendLocation() {
-        const latitude = document.getElementById("textBox1").value.trim();
-        const longitude = document.getElementById("textBox2").value.trim();
-        if (!latitude || !longitude || isNaN(parseFloat(latitude)) || isNaN(parseFloat(longitude))) {
-          Swal.fire({
-            icon: "error",
-            title: "Invalid Location Data",
-            text: "Please provide valid latitude and longitude values.",
-          });
-          return;
-        }
-        const messageObj = {
-          type: "location",
-          title: "คุณได้รับโลเคชั่น จากฉันแล้ว...",
-          address: "ที่อยู่นี้สามารถดูได้จากแผนที่",
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-        };
-        sendMessage(messageObj);
-      }
-
-      function goSimulator() {
-        liff.openWindow({
-          url: "https://developers.line.biz/flex-simulator/",
-          external: true,
-        });
-      }
-
-      function sendMessage(messageObj) {
-        liff.ready.then(() => {
-          liff
-            .shareTargetPicker([messageObj])
-            .then((result) => {
-              if (result && result.status === "success") {
-                Swal.fire({
-                  icon: "success",
-                  title: "ส่งข้อความเรียบร้อย!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-                document.getElementById("textBox1").value = "";
-                document.getElementById("textBox2").value = "";
-              } else if (result && result.status === "cancel") {
-                Swal.fire({
-                  icon: "info",
-                  title: "คุณยกเลิกการแชร์",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else {
-                console.warn("Unexpected shareTargetPicker result:", result);
-                Swal.fire({
-                  icon: "info",
-                  title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              }
-            })
-            .catch((error) => {
-              console.error("Error sending message:", error);
-              Swal.fire({
-                icon: "error",
-                title: "เกิดข้อผิดพลาดในการส่งข้อความ",
-                text: error.message,
-              });
-            });
-        });
-      }
-
-      function toggleMessageDisplay(elementId) {
-        const element = document.getElementById(elementId);
-        if (element) {
-          element.style.display = element.style.display === "none" ? "block" : "none";
-        } else {
-          console.error(`Element ${elementId} not found`);
-        }
-      }
-
-      function formatJson() {
-        const textBox2 = document.getElementById("textBox2");
-        const jsonInput = textBox2.value.trim();
-        if (!jsonInput) {
-          Swal.fire({
-            icon: "error",
-            title: "ไม่มี JSON ให้จัดรูปแบบ",
-            text: "กรุณากรอก JSON ในช่องข้อมูลที่ 2",
-          });
-          return;
-        }
-        try {
-          const jsonObj = JSON.parse(jsonInput);
-          textBox2.value = JSON.stringify(jsonObj, null, 2);
-          Swal.fire({
-            icon: "success",
-            title: "จัดรูปแบบ JSON สำเร็จ!",
-            timer: 1000,
-            showConfirmButton: false,
-          });
-        } catch (error) {
-          console.error("Error formatting JSON:", error);
-          Swal.fire({
-            icon: "error",
-            title: "JSON ไม่ถูกต้อง",
-            text: `ไม่สามารถจัดรูปแบบได้: ${error.message}`,
-          });
-        }
-      }
-
-      function showTemplate() {
-        const flexContainer = document.getElementById("flex1");
-        const templateJson = document.getElementById("textBox2").value.trim();
-        if (!templateJson) {
-          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Template JSON in the second input.</p>';
-          return;
-        }
-        try {
-          const templateObject = JSON.parse(templateJson);
-          flexContainer.innerHTML = `
-            <div id="template-preview">
-              <pre class="json-fallback">${escapeHtml(JSON.stringify(templateObject, null, 2))}</pre>
-            </div>
-          `;
-          flexContainer.style.display = "block";
-          flexContainer.scrollIntoView({ behavior: "smooth" });
-        } catch (error) {
-          console.error("Error parsing Template JSON:", error);
-          flexContainer.innerHTML = `<p class="text-danger">Invalid Template JSON: ${error.message}</p>`;
-        }
-      }
-
-      function isValidFlexMessage(obj) {
-        return (
-          obj &&
-          (obj.type === "bubble" ||
-            obj.type === "carousel" ||
-            (obj.type === "flex" && obj.contents))
-        );
-      }
-
-      function isValidStickerMessage(packageId, stickerId) {
-        return packageId && stickerId && /^\d+$/.test(packageId) && /^\d+$/.test(stickerId);
       }
 
       function sendSticker() {
@@ -778,7 +446,7 @@
         const messageObj = {
           type: "sticker",
           packageId: packageId,
-          stickerId: stickerId,
+          stickerId: stickerId
         };
         sendMessage(messageObj);
       }
@@ -801,39 +469,65 @@
             document.getElementById("showtext").textContent = "";
             document.getElementById("flex1").style.display = "none";
             document.getElementById("showtext").style.display = "none";
-            window.currentItemId = null;
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
       }
 
-      function showSticker() {
-        const flexContainer = document.getElementById("flex1");
-        flexContainer.innerHTML = "";
-        const packageId = document.getElementById("textBox1").value || "11537";
-        const stickerId = document.getElementById("textBox2").value || "52002734";
-        const stickerUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${stickerId}/android/sticker.png`;
-        flexContainer.innerHTML = `<img src="${stickerUrl}" alt="Sticker (packageId: ${packageId}, stickerId: ${stickerId})" style="max-width: 200px;" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Sticker+Not+Found';">`;
+      function sendImage() {
+        const originalContentUrl = document.getElementById("textBox1").value;
+        const previewImageUrl = document.getElementById("textBox2").value;
+        sendMessage({
+          type: "image",
+          originalContentUrl,
+          previewImageUrl,
+        });
       }
 
-      function showVideo() {
-        const videoUrl = document.getElementById("textBox1").value.trim();
-        const previewImageUrl = document.getElementById("textBox2").value.trim();
-        if (!videoUrl) {
+      function sendFlex() {
+        const altText = document.getElementById("textBox1").value;
+        let contents;
+        try {
+          contents = JSON.parse(document.getElementById("textBox2").value);
+        } catch (e) {
+          console.error("Error parsing Flex JSON:", e);
           Swal.fire({
             icon: "error",
-            title: "Missing Video URL",
-            text: "Please enter a video URL in the first text box.",
+            title: "Invalid Flex Message format",
+            text: "Please check your JSON input.",
           });
           return;
         }
-        const videoPreview = document.getElementById("flex1");
-        videoPreview.innerHTML = `
-          <video width="100%" controls poster="${previewImageUrl || 'https://via.placeholder.com/300?text=Preview+Not+Found'}">
-            <source src="${videoUrl}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-        `;
+        if (!isValidFlexMessage(contents)) {
+          Swal.fire({
+            icon: "error",
+            title: "Invalid Flex Message structure",
+            text: "Please ensure your JSON follows the correct Flex Message format.",
+          });
+          return;
+        }
+        const messageObj = {
+          type: "flex",
+          altText: altText || "Flex Message",
+          contents: contents,
+        };
+        sendMessage(messageObj);
+      }
+
+      function isValidFlexMessage(obj) {
+        return (
+          obj &&
+          (obj.type === "bubble" ||
+            obj.type === "carousel" ||
+            (obj.type === "flex" && obj.contents))
+        );
+      }
+
+      function sendText() {
+        sendMessage({
+          type: "text",
+          text: document.getElementById("textBox2").value,
+        });
       }
 
       function getLocation() {
@@ -885,6 +579,211 @@
         });
       }
 
+      function showVideo() {
+        const videoUrl = document.getElementById("textBox1").value;
+        const previewImageUrl = document.getElementById("textBox2").value;
+        if (!videoUrl) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing video URL",
+            text: "Please enter a video URL in the first text box.",
+          });
+          return;
+        }
+        const videoPreview = document.getElementById("flex1");
+        videoPreview.innerHTML = `
+          <video width="100%" controls poster="${previewImageUrl}">
+            <source src="${videoUrl}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        `;
+      }
+
+      function sendVideo() {
+        const originalContentUrl = document.getElementById("textBox1").value;
+        const previewImageUrl = document.getElementById("textBox2").value;
+        if (!originalContentUrl) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing video URL",
+            text: "Please enter a video URL in the first text box.",
+          });
+          return;
+        }
+        if (!previewImageUrl) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing preview image URL",
+            text: "Please enter a preview image URL in the second text box.",
+          });
+          return;
+        }
+        sendMessage({
+          type: "video",
+          originalContentUrl: originalContentUrl,
+          previewImageUrl: previewImageUrl,
+        });
+      }
+
+      function sendLocation() {
+        const latitude = document.getElementById("textBox1").value;
+        const longitude = document.getElementById("textBox2").value;
+        if (!latitude || !longitude) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing location data",
+            text: "Please get your location first or enter latitude and longitude manually.",
+          });
+          return;
+        }
+        sendMessage({
+          type: "location",
+          title: "My Location",
+          address: "View on map",
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+        });
+      }
+
+      async function scanQrCode() {
+        const qrReader = document.getElementById("qr-reader");
+        if (liff.isInClient()) {
+          try {
+            const result = await liff.scanCodeV2();
+            document.getElementById("textBox2").value = result.value;
+            showScanResult(result.value);
+          } catch (error) {
+            showScanError(error);
+          }
+        } else {
+          qrReader.innerHTML = `
+            <div>
+              <p class="text-white" style="font-weight:bold; font-size:1rem;">เลือกวิธีสแกน QR Code:</p>
+              <button id="cameraBtn" class="btn btn-primary">ใช้กล้อง</button>
+              <input type="file" id="fileInput" accept="image/*" style="display: none;">
+              <button id="fileBtn" class="btn btn-secondary">อัปโหลดรูปภาพ</button>
+            </div>
+            <div id="qrScannerContainer"></div>
+          `;
+          document.getElementById("cameraBtn").onclick = startCameraScanner;
+          document.getElementById("fileBtn").onclick = () => document.getElementById("fileInput").click();
+          document.getElementById("fileInput").onchange = handleFileUpload;
+          qrReader.style.display = "block";
+        }
+      }
+
+      let scanner = null;
+      function startCameraScanner() {
+        const qrScannerContainer = document.getElementById("qrScannerContainer");
+        qrScannerContainer.innerHTML = "";
+        scanner = new Html5Qrcode("qrScannerContainer");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        scanner
+          .start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
+          .catch((error) => {
+            console.error("Error starting scanner:", error);
+            showCameraAccessInstructions();
+          });
+        const closeButton = document.createElement("button");
+        closeButton.textContent = "ปิดสแกนเนอร์";
+        closeButton.className = "btn btn-danger mt-2";
+        closeButton.onclick = stopScanner;
+        qrScannerContainer.appendChild(closeButton);
+      }
+
+      function stopScanner() {
+        if (scanner) {
+          scanner
+            .stop()
+            .then(() => {
+              scanner.clear();
+              document.getElementById("qrScannerContainer").innerHTML = "";
+            })
+            .catch((error) => console.error("Error stopping scanner:", error));
+        }
+      }
+
+      function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, img.width, img.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const code = jsQR(imageData.data, imageData.width, imageData.height);
+              if (code) {
+                onScanSuccess(code.data);
+              } else {
+                Swal.fire({
+                  icon: "error",
+                  title: "ไม่พบ QR Code",
+                  text: "กรุณาอัปโหลดรูปภาพที่มี QR Code ที่ชัดเจน",
+                });
+              }
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+
+      function onScanSuccess(decodedText) {
+        document.getElementById("textBox2").value = decodedText;
+        showScanResult(decodedText);
+        document.getElementById("qr-reader").style.display = "none";
+      }
+
+      function onScanError(error) {
+        console.warn(`QR error: ${error}`);
+      }
+
+      function showCameraAccessInstructions() {
+        Swal.fire({
+          icon: "info",
+          title: "ไม่สามารถเข้าถึงกล้องได้",
+          html: `
+            <p>กรุณาทำตามขั้นตอนต่อไปนี้เพื่ออนุญาตการเข้าถึงกล้อง:</p>
+            <ol>
+              <li>คลิกที่ไอคอนกุญแจหรือ 'i' ที่ด้านซ้ายของ URL ในเบราว์เซอร์</li>
+              <li>เลือก 'การตั้งค่าไซต์' หรือ 'Site settings'</li>
+              <li>ค้นหาการตั้งค่ากล้องและเปลี่ยนเป็น 'อนุญาต' หรือ 'Allow'</li>
+              <li>รีเฟรชหน้าเว็บและลองสแกนอีกครั้ง</li>
+            </ol>
+            <p>หากยังไม่สามารถใช้กล้องได้ กรุณาลองอัปโหลดรูปภาพ QR Code แทน</p>
+          `,
+        });
+      }
+
+      function showScanResult(value) {
+        Swal.fire({
+          icon: "success",
+          title: "สแกน QR Code สำเร็จ!",
+          text: `ค่าที่สแกนได้: ${value}`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+
+      function showScanError(error) {
+        let errorMessage = "เกิดข้อผิดพลาดในการสแกน QR code";
+        if (error.name === "NotAllowedError") {
+          errorMessage = "ไม่ได้รับอนุญาตให้เข้าถึงกล้อง กรุณาอนุญาตการเข้าถึงกล้องเพื่อสแกน QR code";
+        } else if (error.name === "NotFoundError") {
+          errorMessage = "ไม่พบกล้องบนอุปกรณ์นี้";
+        }
+        Swal.fire({
+          icon: "error",
+          title: "เกิดข้อผิดพลาด",
+          text: errorMessage,
+        });
+      }
+
       async function saveToSupabase(retryCount = 0, maxRetries = 3) {
         if (!profile || !profile.userId) {
           Swal.fire({
@@ -894,9 +793,9 @@
           });
           return;
         }
-        const flexJson = document.getElementById("textBox2").value.trim();
-        const title = document.getElementById("textBox1").value.trim();
-        if (!title) {
+        const flexJson = document.getElementById("textBox2").value;
+        const title = document.getElementById("textBox1").value;
+        if (!title.trim()) {
           Swal.fire({
             icon: "error",
             title: "กรุณากรอกหัวข้อ",
@@ -911,7 +810,6 @@
             throw new Error("ไม่ใช่ Flex Message ที่ถูกต้อง");
           }
         } catch (error) {
-          console.error("Error parsing Flex JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
@@ -920,24 +818,23 @@
           return;
         }
         const data = {
-          id: window.currentItemId || undefined,
           title: title,
           text1: flexJson,
           userId: profile.userId,
           displayName: profile.displayName,
-          type: "flex",
+          type: "flex"
         };
         Swal.fire({
-          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
+          title: "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
           },
         });
+        console.log("Saving data:", data);
         try {
-          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: method,
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -954,14 +851,14 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
+          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+              title: "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -991,9 +888,9 @@
           });
           return;
         }
-        const templateJson = document.getElementById("textBox2").value.trim();
-        const title = document.getElementById("textBox1").value.trim();
-        if (!title) {
+        const templateJson = document.getElementById("textBox2").value;
+        const title = document.getElementById("textBox1").value;
+        if (!title.trim()) {
           Swal.fire({
             icon: "error",
             title: "กรุณากรอกหัวข้อ",
@@ -1004,8 +901,10 @@
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
+          if (!isValidButtonsTemplate(templateObj)) {
+            throw new Error("ไม่ใช่ Buttons Template ที่ถูกต้อง");
+          }
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
@@ -1014,24 +913,23 @@
           return;
         }
         const data = {
-          id: window.currentItemId || undefined,
           title: title,
           text1: templateJson,
           userId: profile.userId,
           displayName: profile.displayName,
-          type: "template",
+          type: "template"
         };
         Swal.fire({
-          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
+          title: "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
           },
         });
+        console.log("Saving data:", data);
         try {
-          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: method,
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -1048,14 +946,14 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
+          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+              title: "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -1081,6 +979,7 @@
           console.warn("Profile not loaded yet, skipping fetchDataList");
           return;
         }
+        console.log("Fetching data for userId:", profile.userId);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
             method: "GET",
@@ -1099,6 +998,10 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
+          console.log("Fetched data:", data);
+          if (!Array.isArray(data)) {
+            throw new Error("Data is not an array");
+          }
           window.listData = data;
           const listHtml = data
             .map((item) => {
@@ -1143,25 +1046,27 @@
       }
 
       async function showMessage(id, retryCount = 0, maxRetries = 1) {
+        console.log("Showing message for id:", id, "listData:", window.listData);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            return showMessage(id, retryCount + 1, maxRetries);
+            showMessage(id, retryCount + 1, maxRetries);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถโหลดข้อมูลได้",
+              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+              confirmButtonText: "รีเฟรช",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                fetchDataList();
+              }
+            });
           }
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถโหลดข้อมูลได้",
-            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
           return;
         }
-        const item = window.listData.find((item) => String(item.id) === String(id));
+        const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("showMessage: Item not found for id:", id);
           Swal.fire({
@@ -1185,9 +1090,6 @@
           });
           return;
         }
-        document.getElementById("textBox1").value = item.title || "";
-        document.getElementById("textBox2").value = item.text1;
-        window.currentItemId = id;
         const flexContainer = document.getElementById("flex1");
         if (!flexContainer) {
           console.error("Flex container not found");
@@ -1225,9 +1127,17 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
+            if (!isValidButtonsTemplate(obj)) {
+              throw new Error("Invalid Buttons Template structure");
+            }
             flexContainer.innerHTML = `
               <div id="template-preview">
-                <pre class="json-fallback">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>
+                ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
+                <div class="text">${escapeHtml(obj.text)}</div>
+                ${obj.actions.map(action => `
+                  <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                `).join('')}
               </div>
             `;
             flexContainer.style.display = "block";
@@ -1236,7 +1146,7 @@
             throw new Error("Unknown message type");
           }
         } catch (e) {
-          console.error("Error in showMessage:", e, "item:", item);
+          console.error("Error parsing or displaying message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อความได้",
@@ -1249,6 +1159,7 @@
         if (!profile || !profile.userId) {
           throw new Error("โปรไฟล์ยังไม่โหลด");
         }
+        console.log("Deleting item with id:", id);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
             method: "DELETE",
@@ -1271,6 +1182,7 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
+          console.log("Delete response:", data);
           if (!data.success) {
             throw new Error(data.error || "Unknown error occurred");
           }
@@ -1278,7 +1190,7 @@
         } catch (error) {
           if (retryCount < maxRetries) {
             console.log(`Retrying deleteItemFromServer (${retryCount + 1}/${maxRetries})...`);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return deleteItemFromServer(id, retryCount + 1, maxRetries);
           }
           throw error;
@@ -1309,7 +1221,6 @@
               .then(() => {
                 Swal.fire("ลบแล้ว!", "รายการได้ถูกลบเรียบร้อยแล้ว", "success");
                 fetchDataList();
-                window.currentItemId = null;
               })
               .catch((error) => {
                 console.error("Error deleting item:", error);
@@ -1336,25 +1247,27 @@
       }
 
       async function shareListItem(id, retryCount = 0, maxRetries = 1) {
+        console.log("Sharing item with id:", id);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            return shareListItem(id, retryCount + 1, maxRetries);
+            shareListItem(id, retryCount + 1, maxRetries);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถโหลดข้อมูลได้",
+              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+              confirmButtonText: "รีเฟรช",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                fetchDataList();
+              }
+            });
           }
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถโหลดข้อมูลได้",
-            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
           return;
         }
-        const item = window.listData.find((item) => String(item.id) === String(id));
+        const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("shareListItem: Item not found for id:", id);
           Swal.fire({
@@ -1369,8 +1282,8 @@
           });
           return;
         }
-        if (!item.text1 || !item.type) {
-          console.error("shareListItem: Missing text1 or type for item:", item);
+        if (!item.text1) {
+          console.error("shareListItem: Missing text1 for item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแชร์ข้อมูลได้",
@@ -1379,37 +1292,45 @@
           return;
         }
         try {
-          const obj = JSON.parse(item.text1);
-          let messageObj;
-          if (item.type === "flex") {
-            if (!isValidFlexMessage(obj)) {
-              throw new Error("Invalid Flex message structure");
-            }
-            if (obj.type === "carousel" || obj.type === "bubble") {
-              messageObj = {
-                type: "flex",
-                altText: item.title || "Flex Message",
-                contents: obj,
-              };
-            } else {
-              messageObj = obj;
-            }
-          } else if (item.type === "template") {
-            messageObj = {
-              type: "template",
-              altText: item.title || "Template Message",
-              template: obj,
-            };
-          } else {
-            throw new Error("Unknown message type");
-          }
+          const messageObj = JSON.parse(item.text1);
           sendMessage(messageObj);
         } catch (e) {
-          console.error("Error in shareListItem:", e, "item:", item);
+          console.error("Error parsing or sending message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถส่งข้อความได้",
             text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
+          });
+        }
+      }
+
+      function sendMessage(messageObj) {
+        if (liff.isApiAvailable("shareTargetPicker")) {
+          liff
+            .shareTargetPicker([messageObj])
+            .then(() => {
+              Swal.fire({
+                icon: "success",
+                title: "ส่งข้อความเรียบร้อย!",
+                timer: 1500,
+                showConfirmButton: false,
+              });
+              document.getElementById("textBox1").value = "";
+              document.getElementById("textBox2").value = "";
+            })
+            .catch((error) => {
+              console.error("Error sending message:", error);
+              Swal.fire({
+                icon: "error",
+                title: "เกิดข้อผิดพลาดในการส่งข้อความ",
+                text: error.message,
+              });
+            });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "ฟีเจอร์นี้ไม่รองรับ",
+            text: "แอพพลิเคชันนี้ไม่รองรับการแชร์ข้อความ",
           });
         }
       }
@@ -1419,7 +1340,6 @@
         const textBox2 = document.getElementById("textBox2");
         if (textBox1) textBox1.value = "";
         if (textBox2) textBox2.value = "";
-        window.currentItemId = null;
       }
     </script>
     <script src="https://unpkg.com/html5-qrcode"></script>
