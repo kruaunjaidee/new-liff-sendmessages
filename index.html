@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
   <head>
@@ -160,7 +161,26 @@
         border-radius: 5px;
         text-decoration: none;
       }
-    
+      #template-preview .confirm-buttons {
+        display: flex;
+        justify-content: space-between;
+      }
+      #template-preview .confirm-buttons .action-btn {
+        width: 48%;
+      }
+      #template-preview .carousel {
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+        padding-bottom: 10px;
+      }
+      #template-preview .carousel-item {
+        flex: 0 0 auto;
+        width: 250px;
+        background: #f5f5f5;
+        border-radius: 10px;
+        padding: 10px;
+      }
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -194,7 +214,7 @@
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON actions สำหรับ Template)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON template สำหรับ Template)"
         ></textarea>
       </div>
       <div
@@ -366,43 +386,141 @@
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          if (!isValidButtonsTemplate(templateObject)) {
-            throw new Error("Invalid Buttons Template structure");
+          if (!isValidTemplateMessage(templateObject)) {
+            throw new Error("Invalid Template message structure");
           }
-          flexContainer.innerHTML = `
-            <div id="template-preview">
-              ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-              ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
-              <div class="text">${escapeHtml(templateObject.text)}</div>
-              ${templateObject.actions.map(action => `
-                <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
-              `).join('')}
-            </div>
-          `;
+          if (templateObject.type === "buttons") {
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
+                <div class="text">${escapeHtml(templateObject.text)}</div>
+                ${templateObject.actions.map(action => `
+                  <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                `).join('')}
+              </div>
+            `;
+          } else if (templateObject.type === "confirm") {
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                <div class="text">${escapeHtml(templateObject.text)}</div>
+                <div class="confirm-buttons">
+                  ${templateObject.actions.map(action => `
+                    <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          } else if (templateObject.type === "carousel") {
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                <div class="carousel">
+                  ${templateObject.columns.map(column => `
+                    <div class="carousel-item">
+                      ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                      ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
+                      <div class="text">${escapeHtml(column.text)}</div>
+                      ${column.actions.map(action => `
+                        <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                      `).join('')}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          } else if (templateObject.type === "image_carousel") {
+            flexContainer.innerHTML = `
+              <div id="template-preview">
+                <div class="carousel">
+                  ${templateObject.columns.map(column => `
+                    <div class="carousel-item">
+                      <img src="${column.imageUrl}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
+                      <a href="${column.action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(column.action.label)}</a>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
         } catch (error) {
           console.error("Error parsing Template JSON:", error);
-          flexContainer.innerHTML = '<p class="text-danger">Invalid Template JSON. Please check your input.</p>';
+          flexContainer.innerHTML = `<p class="text-danger">Invalid Template JSON: ${error.message}</p>`;
         }
       }
 
-      function isValidButtonsTemplate(obj) {
-        return (
-          obj &&
-          obj.type === "buttons" &&
-          typeof obj.text === "string" &&
-          Array.isArray(obj.actions) &&
-          obj.actions.every(action => 
-            action.type === "uri" && 
-            typeof action.label === "string" && 
-            typeof action.uri === "string" &&
-            action.uri.startsWith("http")
-          ) &&
-          (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
-          (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
-          (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
-          (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor)) &&
-          (!obj.title || typeof obj.title === "string")
-        );
+      function isValidTemplateMessage(obj) {
+        if (!obj || typeof obj !== "object" || !obj.type) {
+          return false;
+        }
+        if (obj.type === "buttons") {
+          return (
+            typeof obj.text === "string" &&
+            Array.isArray(obj.actions) &&
+            obj.actions.every(action =>
+              ["postback", "message", "uri", "datetimepicker"].includes(action.type) &&
+              typeof action.label === "string" &&
+              (action.type !== "uri" || (action.uri && action.uri.startsWith("http"))) &&
+              (action.type !== "postback" || action.data) &&
+              (action.type !== "message" || action.text) &&
+              (action.type !== "datetimepicker" || action.data)
+            ) &&
+            (!obj.thumbnailImageUrl || (typeof obj.thumbnailImageUrl === "string" && obj.thumbnailImageUrl.startsWith("http"))) &&
+            (!obj.imageAspectRatio || ["rectangle", "square"].includes(obj.imageAspectRatio)) &&
+            (!obj.imageSize || ["cover", "contain"].includes(obj.imageSize)) &&
+            (!obj.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(obj.imageBackgroundColor)) &&
+            (!obj.title || typeof obj.title === "string")
+          );
+        } else if (obj.type === "confirm") {
+          return (
+            typeof obj.text === "string" &&
+            Array.isArray(obj.actions) &&
+            obj.actions.length === 2 &&
+            obj.actions.every(action =>
+              ["postback", "message", "uri", "datetimepicker"].includes(action.type) &&
+              typeof action.label === "string" &&
+              (action.type !== "uri" || (action.uri && action.uri.startsWith("http"))) &&
+              (action.type !== "postback" || action.data) &&
+              (action.type !== "message" || action.text) &&
+              (action.type !== "datetimepicker" || action.data)
+            )
+          );
+        } else if (obj.type === "carousel") {
+          return (
+            Array.isArray(obj.columns) &&
+            obj.columns.every(column =>
+              typeof column.text === "string" &&
+              Array.isArray(column.actions) &&
+              column.actions.every(action =>
+                ["postback", "message", "uri", "datetimepicker"].includes(action.type) &&
+                typeof action.label === "string" &&
+                (action.type !== "uri" || (action.uri && action.uri.startsWith("http"))) &&
+                (action.type !== "postback" || action.data) &&
+                (action.type !== "message" || action.text) &&
+                (action.type !== "datetimepicker" || action.data)
+              ) &&
+              (!column.thumbnailImageUrl || (typeof column.thumbnailImageUrl === "string" && column.thumbnailImageUrl.startsWith("http"))) &&
+              (!column.imageAspectRatio || ["rectangle", "square"].includes(column.imageAspectRatio)) &&
+              (!column.imageSize || ["cover", "contain"].includes(column.imageSize)) &&
+              (!column.imageBackgroundColor || /^#[0-9A-F]{6}$/i.test(column.imageBackgroundColor)) &&
+              (!column.title || typeof column.title === "string")
+            )
+          );
+        } else if (obj.type === "image_carousel") {
+          return (
+            Array.isArray(obj.columns) &&
+            obj.columns.every(column =>
+              typeof column.imageUrl === "string" && column.imageUrl.startsWith("http") &&
+              column.action &&
+              ["postback", "message", "uri", "datetimepicker"].includes(column.action.type) &&
+              typeof column.action.label === "string" &&
+              (column.action.type !== "uri" || (column.action.uri && column.action.uri.startsWith("http"))) &&
+              (column.action.type !== "postback" || column.action.data) &&
+              (column.action.type !== "message" || column.action.text) &&
+              (column.action.type !== "datetimepicker" || column.action.data)
+            )
+          );
+        }
+        return false;
       }
 
       function isValidStickerMessage(packageId, stickerId) {
@@ -410,7 +528,7 @@
       }
 
       function sendTemplate() {
-        const altText = document.getElementById("textBox1").value || "this is a buttons template";
+        const altText = document.getElementById("textBox1").value || "this is a template message";
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
           Swal.fire({
@@ -422,11 +540,11 @@
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          if (!isValidButtonsTemplate(templateObject)) {
+          if (!isValidTemplateMessage(templateObject)) {
             Swal.fire({
               icon: "error",
-              title: "Invalid Buttons Template structure",
-              text: "Please ensure your JSON follows the correct Buttons Template format.",
+              title: "Invalid Template structure",
+              text: "Please ensure your JSON follows the correct Template Message format.",
             });
             return;
           }
@@ -441,7 +559,7 @@
           Swal.fire({
             icon: "error",
             title: "Invalid Template JSON",
-            text: "Please check your JSON input.",
+            text: `Please check your JSON input: ${error.message}`,
           });
         }
       }
@@ -915,8 +1033,8 @@
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
-          if (!isValidButtonsTemplate(templateObj)) {
-            throw new Error("ไม่ใช่ Buttons Template ที่ถูกต้อง");
+          if (!isValidTemplateMessage(templateObj)) {
+            throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง");
           }
         } catch (error) {
           Swal.fire({
@@ -1141,19 +1259,62 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            if (!isValidButtonsTemplate(obj)) {
-              throw new Error("Invalid Buttons Template structure");
+            if (!isValidTemplateMessage(obj)) {
+              throw new Error("Invalid Template message structure");
             }
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
-                <div class="text">${escapeHtml(obj.text)}</div>
-                ${obj.actions.map(action => `
-                  <a href="${action.uri}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
-                `).join('')}
-              </div>
-            `;
+            if (obj.type === "buttons") {
+              flexContainer.innerHTML = `
+                <div id="template-preview">
+                  ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                  ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
+                  <div class="text">${escapeHtml(obj.text)}</div>
+                  ${obj.actions.map(action => `
+                    <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                  `).join('')}
+                </div>
+              `;
+            } else if (obj.type === "confirm") {
+              flexContainer.innerHTML = `
+                <div id="template-preview">
+                  <div class="text">${escapeHtml(obj.text)}</div>
+                  <div class="confirm-buttons">
+                    ${obj.actions.map(action => `
+                      <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            } else if (obj.type === "carousel") {
+              flexContainer.innerHTML = `
+                <div id="template-preview">
+                  <div class="carousel">
+                    ${obj.columns.map(column => `
+                      <div class="carousel-item">
+                        ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
+                        ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
+                        <div class="text">${escapeHtml(column.text)}</div>
+                        ${column.actions.map(action => `
+                          <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label)}</a>
+                        `).join('')}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            } else if (obj.type === "image_carousel") {
+              flexContainer.innerHTML = `
+                <div id="template-preview">
+                  <div class="carousel">
+                    ${obj.columns.map(column => `
+                      <div class="carousel-item">
+                        <img src="${column.imageUrl}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
+                        <a href="${column.action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(column.action.label)}</a>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
@@ -1322,12 +1483,12 @@
               messageObj = obj;
             }
           } else if (item.type === "template") {
-            if (!isValidButtonsTemplate(obj)) {
-              throw new Error("Invalid Buttons Template structure");
+            if (!isValidTemplateMessage(obj)) {
+              throw new Error("Invalid Template message structure");
             }
             messageObj = {
               type: "template",
-              altText: item.title || "Buttons Template",
+              altText: item.title || "Template Message",
               template: obj
             };
           } else {
@@ -1385,3 +1546,4 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </body>
 </html>
+```
