@@ -49,13 +49,27 @@
         border-color: #2575fc;
         box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
       }
-      #flex1,
+      #flex1 {
+        background-color: #06f9fd;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
       #showtext {
         background-color: #fff;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 20px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        white-space: pre-wrap; /* รองรับการขึ้นบรรทัดและตัดคำตามปกติ */
+        word-wrap: break-word; /* ตัดคำเมื่อข้อความยาวเกินกรอบ */
+        overflow-x: auto; /* เพิ่ม scrollbar แนวนอนถ้าข้อความยาวเกิน */
+        overflow-y: auto; /* เพิ่ม scrollbar แนวตั้งถ้าข้อความยาวเกิน */
+        max-height: 200px; /* จำกัดความสูงเพื่อป้องกันการขยายเกิน */
+        line-height: 1.5; /* เพิ่มระยะห่างระหว่างบรรทัดเพื่อความอ่านง่าย */
+        font-size: 1rem; /* ขนาดฟอนต์ที่เหมาะสม */
+        box-sizing: border-box; /* รวม padding ในขนาดกรอบ */
       }
       .btn {
         border-radius: 50px;
@@ -286,27 +300,27 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
-      let jsonIndentLevel = 2;
+      let jsonIndentLevel = 4;
 
       liff
-        .init({ liffId, withLoginOnExternalBrowser: true })
-        .then(async () => {
-          if (!liff.isLoggedIn()) {
-            liff.login({ redirectUri: window.location.href });
-            return;
-          }
-          try {
-            profile = await liff.getProfile();
-            document.getElementById("pictureUrl").src = profile.pictureUrl;
-            document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
-            fetchDataList();
-          } catch (err) {
-            console.error("Error getting LINE profile:", err);
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
-              text: err.message,
+        .init({ liffId })
+        .then(() => {
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then((p) => {
+              profile = p;
+              document.getElementById("pictureUrl").src = profile.pictureUrl;
+              document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
+              fetchDataList();
+            }).catch((err) => {
+              console.error("Error getting LINE profile:", err);
+              Swal.fire({
+                icon: "error",
+                title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
+                text: err.message,
+              });
             });
+          } else {
+            liff.login();
           }
         })
         .catch((err) => {
@@ -659,15 +673,7 @@
         const qrReader = document.getElementById("qr-reader");
         if (liff.isInClient()) {
           try {
-            const os = liff.getOS();
-            let result;
-            if (os === "ios") {
-              result = await liff.scanCodeV2();
-            } else if (os === "android" || os === "web") {
-              result = await liff.scanCode();
-            } else {
-              throw new Error("Unsupported OS for QR scanning");
-            }
+            const result = await liff.scanCodeV2();
             document.getElementById("textBox2").value = result.value;
             showScanResult(result.value);
           } catch (error) {
@@ -1125,9 +1131,10 @@
         }
         flexContainer.innerHTML = "";
         try {
+          document.getElementById("textBox2").value = item.text1;
+          formatJson(); // Automatically format JSON in textBox2
           const obj = JSON.parse(item.text1);
           if (item.type === "flex") {
-            document.getElementById("textBox2").value = item.text1;
             if (!isValidFlexMessage(obj)) {
               throw new Error("Invalid Flex message structure");
             }
@@ -1151,7 +1158,6 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            document.getElementById("textBox2").value = item.text1;
             flexContainer.innerHTML = `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
@@ -1295,8 +1301,8 @@
           });
           return;
         }
-        if (!item.text1) {
-          console.error("shareListItem: Missing text1 for item:", item);
+        if (!item.text1 || !item.type) {
+          console.error("shareListItem: Missing text1 or type for item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแชร์ข้อมูลได้",
@@ -1322,15 +1328,32 @@
         if (liff.isApiAvailable("shareTargetPicker")) {
           liff
             .shareTargetPicker([messageObj])
-            .then(() => {
-              Swal.fire({
-                icon: "success",
-                title: "ส่งข้อความเรียบร้อย!",
-                timer: 1500,
-                showConfirmButton: false,
-              });
-              document.getElementById("textBox1").value = "";
-              document.getElementById("textBox2").value = "";
+            .then((result) => {
+              if (result && result.status === "success") {
+                Swal.fire({
+                  icon: "success",
+                  title: "ส่งข้อความเรียบร้อย!",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+                document.getElementById("textBox1").value = "";
+                document.getElementById("textBox2").value = "";
+              } else if (result && result.status === "cancel") {
+                Swal.fire({
+                  icon: "info",
+                  title: "ยกเลิกการแชร์หรือแชร์ไม่สำเร็จ",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              } else {
+                console.warn("Unexpected shareTargetPicker result:", result);
+                Swal.fire({
+                  icon: "info",
+                  title: "ยกเลิกการแชร์หรือแชร์ไม่สำเร็จ",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              }
             })
             .catch((error) => {
               console.error("Error sending message:", error);
