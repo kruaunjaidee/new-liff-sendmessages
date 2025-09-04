@@ -286,27 +286,27 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
-      let jsonIndentLevel = 2; // Default indentation: 2 spaces
+      let jsonIndentLevel = 2;
 
       liff
-        .init({ liffId })
-        .then(() => {
-          if (liff.isLoggedIn()) {
-            liff.getProfile().then((p) => {
-              profile = p;
-              document.getElementById("pictureUrl").src = profile.pictureUrl;
-              document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
-              fetchDataList();
-            }).catch((err) => {
-              console.error("Error getting LINE profile:", err);
-              Swal.fire({
-                icon: "error",
-                title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
-                text: err.message,
-              });
+        .init({ liffId, withLoginOnExternalBrowser: true })
+        .then(async () => {
+          if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: window.location.href });
+            return;
+          }
+          try {
+            profile = await liff.getProfile();
+            document.getElementById("pictureUrl").src = profile.pictureUrl;
+            document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
+            fetchDataList();
+          } catch (err) {
+            console.error("Error getting LINE profile:", err);
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
+              text: err.message,
             });
-          } else {
-            liff.login();
           }
         })
         .catch((err) => {
@@ -395,7 +395,6 @@
         }
         try {
           const jsonObj = JSON.parse(jsonString);
-          // Cycle through indentation levels: 2 -> 4 -> 0 -> 2
           jsonIndentLevel = jsonIndentLevel === 2 ? 4 : jsonIndentLevel === 4 ? 0 : 2;
           const indentLabel = jsonIndentLevel === 0 ? "minified" : `${jsonIndentLevel} spaces`;
           textBox2.value = JSON.stringify(jsonObj, null, jsonIndentLevel);
@@ -660,7 +659,15 @@
         const qrReader = document.getElementById("qr-reader");
         if (liff.isInClient()) {
           try {
-            const result = await liff.scanCodeV2();
+            const os = liff.getOS();
+            let result;
+            if (os === "ios") {
+              result = await liff.scanCodeV2();
+            } else if (os === "android" || os === "web") {
+              result = await liff.scanCode();
+            } else {
+              throw new Error("Unsupported OS for QR scanning");
+            }
             document.getElementById("textBox2").value = result.value;
             showScanResult(result.value);
           } catch (error) {
@@ -1120,6 +1127,7 @@
         try {
           const obj = JSON.parse(item.text1);
           if (item.type === "flex") {
+            document.getElementById("textBox2").value = item.text1;
             if (!isValidFlexMessage(obj)) {
               throw new Error("Invalid Flex message structure");
             }
