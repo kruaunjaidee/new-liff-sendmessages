@@ -1312,7 +1312,22 @@
         }
         try {
           document.getElementById("textBox2").value = item.text1;
-          const messageObj = JSON.parse(item.text1);
+          const messageObjRaw = JSON.parse(item.text1);
+          let messageObj;
+          if (item.type === "flex") {
+            if (!isValidFlexMessage(messageObjRaw)) {
+              throw new Error("Invalid Flex message structure");
+            }
+            messageObj = {
+              type: "flex",
+              altText: item.title || "Flex Message",
+              contents: messageObjRaw.type === "bubble" || messageObjRaw.type === "carousel" ? messageObjRaw : messageObjRaw.contents
+            };
+          } else if (item.type === "template") {
+            messageObj = messageObjRaw;
+          } else {
+            throw new Error("Unknown message type");
+          }
           sendMessage(messageObj);
         } catch (e) {
           console.error("Error parsing or sending message JSON:", e, "item:", item);
@@ -1338,15 +1353,8 @@
                 });
                 document.getElementById("textBox1").value = "";
                 document.getElementById("textBox2").value = "";
-              } else if (result && result.status === "cancel") {
-                Swal.fire({
-                  icon: "info",
-                  title: "ยกเลิกการแชร์หรือแชร์ไม่สำเร็จ",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
               } else {
-                console.warn("Unexpected shareTargetPicker result:", result);
+                console.warn("Share cancelled or failed:", result);
                 Swal.fire({
                   icon: "info",
                   title: "ยกเลิกการแชร์หรือแชร์ไม่สำเร็จ",
