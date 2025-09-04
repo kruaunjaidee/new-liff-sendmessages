@@ -1,9 +1,10 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE SEND MESSAGE</title>
+    <title>LINE SENDMESSAGE</title>
     <link rel="stylesheet" href="flex2html.css" />
     <script type="text/javascript" src="flex2html.min.js"></script>
     <style>
@@ -49,13 +50,27 @@
         border-color: #2575fc;
         box-shadow: 0 0 0 0.2rem rgba(37, 117, 252, 0.25);
       }
-      #flex1,
+      #flex1 {
+        background-color: #839ebf;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
       #showtext {
         background-color: #fff;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 20px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        white-space: pre-wrap; /* รองรับการขึ้นบรรทัดและตัดคำตามปกติ */
+        word-wrap: break-word; /* ตัดคำเมื่อข้อความยาวเกินกรอบ */
+        overflow-x: auto; /* เพิ่ม scrollbar แนวนอนถ้าข้อความยาวเกิน */
+        overflow-y: auto; /* เพิ่ม scrollbar แนวตั้งถ้าข้อความยาวเกิน */
+        max-height: 200px; /* จำกัดความสูงเพื่อป้องกันการขยายเกิน */
+        line-height: 1.5; /* เพิ่มระยะห่างระหว่างบรรทัดเพื่อความอ่านง่าย */
+        font-size: 1rem; /* ขนาดฟอนต์ที่เหมาะสม */
+        box-sizing: border-box; /* รวม padding ในขนาดกรอบ */
       }
       .btn {
         border-radius: 50px;
@@ -110,9 +125,9 @@
         background-color: #ff6b6b;
         border-color: #ff6b6b;
       }
-      .btn-format {
-        background-color: #28a745;
-        border-color: #28a745;
+      .btn-imagemap {
+        background-color: #e84393;
+        border-color: #e84393;
       }
       .btn:hover {
         transform: translateY(-2px);
@@ -137,13 +152,6 @@
         font-size: 1.1rem;
         margin-bottom: 0;
       }
-      #dataList .card-body a {
-        color: #00c4b4;
-        text-decoration: underline;
-      }
-      #dataList .card-body a:hover {
-        color: #007bff;
-      }
       #dataList .btn-group .btn {
         padding: 5px 10px;
         font-size: 0.9rem;
@@ -161,40 +169,21 @@
       #template-preview .text {
         margin-bottom: 10px;
       }
-      #template-preview .action-link {
+      #template-preview .action-btn {
         display: block;
         margin: 5px 0;
-        color: #00c4b4;
-        text-decoration: underline;
+        padding: 10px;
+        background-color: #00c4b4;
+        color: white;
+        text-align: center;
+        border-radius: 5px;
+        text-decoration: none;
       }
-      #template-preview .action-link:hover {
-        color: #007bff;
-      }
-      #template-preview .confirm-links {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      #template-preview .carousel {
-        display: flex;
+      pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
         overflow-x: auto;
-        gap: 10px;
-        padding-bottom: 10px;
-      }
-      #template-preview .carousel-item {
-        flex: 0 0 auto;
-        width: 250px;
-        background: #f5f5f5;
-        border-radius: 10px;
-        padding: 10px;
-      }
-      #template-preview .json-fallback {
-        background: #f5f5f5;
-        padding: 10px;
-        border-radius: 10px;
-        white-space: pre-wrap;
-        font-family: monospace;
-        font-size: 0.9rem;
       }
       @media (max-width: 576px) {
         .container {
@@ -216,20 +205,20 @@
         <img id="pictureUrl" class="mb-2" alt="Profile Picture" />
         <p class="text-white mb-2" id="displayName"></p>
       </center>
-      <h2 class="text-white text-center">❤️ sendMessages ❤️</h2>
+      <h2 class="text-white text-center">❤️ SendMessage ❤️</h2>
       <div class="mb-3">
         <input
           class="form-control"
           type="text"
           id="textBox1"
-          placeholder="ข้อมูลที่ 1 (เช่น packageId สำหรับ Sticker, หัวข้อสำหรับ Template)"
+          placeholder="ข้อมูลที่ 1 (เช่น หัวข้อสำหรับ Flex/Template/Imagemap)"
         />
       </div>
       <div class="mb-3">
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON template สำหรับ Template)"
+          placeholder="ข้อมูลที่ 2 (เช่น JSON สำหรับ Flex/Template/Imagemap)"
         ></textarea>
       </div>
       <div
@@ -293,30 +282,42 @@
         <button class="btn btn-sticker" onclick="sendSticker()">
           Send Sticker
         </button>
+        <button
+          class="btn btn-imagemap"
+          onclick="showImagemap(); toggleMessageDisplay('flex1')"
+        >
+          Show Imagemap
+        </button>
+        <button class="btn btn-imagemap" onclick="sendImagemap()">
+          Send Imagemap
+        </button>
+        <button class="btn btn-secondary" onclick="formatJson()">
+          Format JSON
+        </button>
         <button class="btn btn-secondary" onclick="clearText()">
           ล้างข้อความทั้งหมด
         </button>
-        <button class="btn btn-format" onclick="formatJson()">
-          จัดรูปแบบ JSON
-        </button>
       </div>
-      <div class="mt-3">
+      <div class="mt-3 mb-3">
         <button class="btn btn-success w-100" onclick="saveToSupabase()">
           บันทึก Flex Message
         </button>
-        <button class="btn btn-success w-100 mt-2 mb-3" onclick="saveTemplateToSupabase()">
+        <button class="btn btn-success w-100 mt-2" onclick="saveTemplateToSupabase()">
           บันทึก Template Message
         </button>
+        <button class="btn btn-success w-100 mt-2" onclick="saveImagemapToSupabase()">
+          บันทึก Imagemap Message
+        </button>
       </div>
-      <div id="dataList" class="mt-5 bg-white p-2 rounded"></div>
+      <div style="margin-top: 10px;" id="dataList" class="mt-3 bg-white p-2 rounded"></div>
     </div>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script>
-      const liffId = "2005780370-QmwJlX9q";
+      const liffId = "2005780370-wqaNKW7z";
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
-      window.currentItemId = null;
+      let jsonIndentLevel = 4;
 
       liff
         .init({ liffId })
@@ -351,36 +352,6 @@
       function toggleMessageDisplay(elementId) {
         const element = document.getElementById(elementId);
         element.style.display = element.style.display === "none" ? "block" : "none";
-      }
-
-      function formatJson() {
-        const textBox2 = document.getElementById("textBox2");
-        const jsonInput = textBox2.value.trim();
-        if (!jsonInput) {
-          Swal.fire({
-            icon: "error",
-            title: "ไม่มี JSON ให้จัดรูปแบบ",
-            text: "กรุณากรอก JSON ในช่องข้อมูลที่ 2",
-          });
-          return;
-        }
-        try {
-          const jsonObj = JSON.parse(jsonInput);
-          textBox2.value = JSON.stringify(jsonObj, null, 2);
-          Swal.fire({
-            icon: "success",
-            title: "จัดรูปแบบ JSON สำเร็จ!",
-            timer: 1000,
-            showConfirmButton: false,
-          });
-        } catch (error) {
-          console.error("Error formatting JSON:", error);
-          Swal.fire({
-            icon: "error",
-            title: "JSON ไม่ถูกต้อง",
-            text: `ไม่สามารถจัดรูปแบบได้: ${error.message}`,
-          });
-        }
       }
 
       function showImage() {
@@ -430,85 +401,66 @@
         flexContainer.innerHTML = "";
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
-          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid Template JSON in the second input.</p>';
+          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid JSON in the second input.</p>';
           return;
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          if (!isValidTemplateMessage(templateObject)) {
-            throw new Error("Invalid Template message structure: Must have a 'type' field and valid JSON structure");
-          }
-          if (templateObject.type === "buttons") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
-                <div class="text">${escapeHtml(templateObject.text || '')}</div>
-                ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                  <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                `).join('') : ''}
-              </div>
-            `;
-          } else if (templateObject.type === "confirm") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="text">${escapeHtml(templateObject.text || '')}</div>
-                <div class="confirm-links">
-                  ${templateObject.actions && Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else if (templateObject.type === "carousel") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="carousel">
-                  ${templateObject.columns && Array.isArray(templateObject.columns) ? templateObject.columns.map(column => `
-                    <div class="carousel-item">
-                      ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                      ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
-                      <div class="text">${escapeHtml(column.text || '')}</div>
-                      ${column.actions && Array.isArray(column.actions) ? column.actions.map(action => `
-                        <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                      `).join('') : ''}
-                    </div>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else if (templateObject.type === "image_carousel") {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <div class="carousel">
-                  ${templateObject.columns && Array.isArray(templateObject.columns) ? templateObject.columns.map(column => `
-                    <div class="carousel-item">
-                      <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                      <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
-                    </div>
-                  `).join('') : ''}
-                </div>
-              </div>
-            `;
-          } else {
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                <p>Unrecognized template type: ${escapeHtml(templateObject.type)}</p>
-                <pre class="json-fallback">${escapeHtml(JSON.stringify(templateObject, null, 2))}</pre>
-              </div>
-            `;
-          }
+          flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
-          flexContainer.innerHTML = `<p class="text-danger">Invalid Template JSON: ${error.message}</p>`;
+          console.error("Error parsing JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
         }
       }
 
-      function isValidTemplateMessage(obj) {
-        if (!obj || typeof obj !== "object" || !obj.type || typeof obj.type !== "string") {
-          return false;
+      function showImagemap() {
+        const flexContainer = document.getElementById("flex1");
+        flexContainer.innerHTML = "";
+        const imagemapJson = document.getElementById("textBox2").value.trim();
+        if (!imagemapJson) {
+          flexContainer.innerHTML = '<p class="text-danger">Please provide a valid JSON in the second input.</p>';
+          return;
         }
-        return true;
+        try {
+          const imagemapObject = JSON.parse(imagemapJson);
+          flexContainer.innerHTML = `<pre>${JSON.stringify(imagemapObject, null, 2)}</pre>`;
+        } catch (error) {
+          console.error("Error parsing Imagemap JSON:", error);
+          flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
+        }
+      }
+
+      function formatJson() {
+        const textBox2 = document.getElementById("textBox2");
+        const jsonString = textBox2.value.trim();
+        if (!jsonString) {
+          Swal.fire({
+            icon: "error",
+            title: "No JSON to format",
+            text: "Please provide a JSON string in the second input.",
+          });
+          return;
+        }
+        try {
+          const jsonObj = JSON.parse(jsonString);
+          jsonIndentLevel = jsonIndentLevel === 2 ? 4 : jsonIndentLevel === 4 ? 0 : 2;
+          const indentLabel = jsonIndentLevel === 0 ? "minified" : `${jsonIndentLevel} spaces`;
+          textBox2.value = JSON.stringify(jsonObj, null, jsonIndentLevel);
+          Swal.fire({
+            icon: "success",
+            title: "JSON Formatted",
+            text: `Formatted with ${indentLabel} indentation.`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          console.error("Error formatting JSON:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Invalid JSON",
+            text: `Please check your JSON input: ${error.message}`,
+          });
+        }
       }
 
       function isValidStickerMessage(packageId, stickerId) {
@@ -516,37 +468,23 @@
       }
 
       function sendTemplate() {
-        const altText = document.getElementById("textBox1").value || "this is a template message";
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
           Swal.fire({
             icon: "error",
-            title: "Missing Template JSON",
-            text: "Please provide a valid Template JSON in the second input.",
+            title: "Missing Message JSON",
+            text: "Please provide a valid JSON in the second input.",
           });
           return;
         }
         try {
-          const templateObject = JSON.parse(templateJson);
-          if (!isValidTemplateMessage(templateObject)) {
-            Swal.fire({
-              icon: "error",
-              title: "Invalid Template structure",
-              text: "Please ensure your JSON has a valid 'type' field.",
-            });
-            return;
-          }
-          const messageObj = {
-            type: "template",
-            altText: altText,
-            template: templateObject
-          };
+          const messageObj = JSON.parse(templateJson);
           sendMessage(messageObj);
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
+          console.error("Error parsing Message JSON:", error);
           Swal.fire({
             icon: "error",
-            title: "Invalid Template JSON",
+            title: "Invalid Message JSON",
             text: `Please check your JSON input: ${error.message}`,
           });
         }
@@ -571,6 +509,32 @@
         sendMessage(messageObj);
       }
 
+      function sendImagemap() {
+        const imagemapJson = document.getElementById("textBox2").value.trim();
+        if (!imagemapJson) {
+          Swal.fire({
+            icon: "error",
+            title: "Missing Imagemap JSON",
+            text: "Please provide a valid JSON in the second input.",
+          });
+          return;
+        }
+        try {
+          const messageObj = JSON.parse(imagemapJson);
+          if (messageObj.type !== "imagemap") {
+            throw new Error("JSON must have type: 'imagemap'");
+          }
+          sendMessage(messageObj);
+        } catch (error) {
+          console.error("Error parsing Imagemap JSON:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Invalid Imagemap JSON",
+            text: `Please check your JSON input: ${error.message}`,
+          });
+        }
+      }
+
       function clearText() {
         Swal.fire({
           title: "คุณแน่ใจหรือไม่?",
@@ -589,7 +553,6 @@
             document.getElementById("showtext").textContent = "";
             document.getElementById("flex1").style.display = "none";
             document.getElementById("showtext").style.display = "none";
-            window.currentItemId = null;
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
@@ -931,7 +894,6 @@
             throw new Error("ไม่ใช่ Flex Message ที่ถูกต้อง");
           }
         } catch (error) {
-          console.error("Error parsing Flex JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
@@ -940,7 +902,6 @@
           return;
         }
         const data = {
-          id: window.currentItemId || undefined,
           title: title,
           text1: flexJson,
           userId: profile.userId,
@@ -948,17 +909,15 @@
           type: "flex"
         };
         Swal.fire({
-          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
+          title: "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
           },
         });
-        console.log("Saving data:", data);
         try {
-          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: method,
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -975,15 +934,13 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
-          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+              title: "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -1013,9 +970,9 @@
           });
           return;
         }
-        const templateJson = document.getElementById("textBox2").value;
-        const title = document.getElementById("textBox1").value;
-        if (!title.trim()) {
+        const templateJson = document.getElementById("textBox2").value.trim();
+        const title = document.getElementById("textBox1").value.trim();
+        if (!title) {
           Swal.fire({
             icon: "error",
             title: "กรุณากรอกหัวข้อ",
@@ -1023,23 +980,26 @@
           });
           return;
         }
+        if (!templateJson) {
+          Swal.fire({
+            icon: "error",
+            title: "กรุณากรอก JSON",
+            text: "JSON ไม่สามารถเป็นค่าว่างได้",
+          });
+          return;
+        }
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
-          if (!isValidTemplateMessage(templateObj)) {
-            throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง: ต้องมีฟิลด์ 'type'");
-          }
         } catch (error) {
-          console.error("Error parsing Template JSON:", error);
           Swal.fire({
             icon: "error",
             title: "JSON ไม่ถูกต้อง",
-            text: `กรุณาตรวจสอบ JSON Template Message ของคุณ: ${error.message}`,
+            text: `กรุณาตรวจสอบ JSON ของคุณ: ${error.message}`,
           });
           return;
         }
         const data = {
-          id: window.currentItemId || undefined,
           title: title,
           text1: templateJson,
           userId: profile.userId,
@@ -1047,17 +1007,15 @@
           type: "template"
         };
         Swal.fire({
-          title: window.currentItemId ? "กำลังอัปเดตข้อมูล..." : "กำลังบันทึกข้อมูล...",
+          title: "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
           didOpen: () => {
             Swal.showLoading();
           },
         });
-        console.log("Saving data:", data);
         try {
-          const method = window.currentItemId ? "PUT" : "POST";
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: method,
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -1074,15 +1032,13 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
-          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
-              title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+              title: "บันทึกข้อมูลเรียบร้อย!",
               timer: 1500,
               showConfirmButton: false,
             });
-            window.currentItemId = null;
             clearInputs();
             fetchDataList();
           } else {
@@ -1103,12 +1059,112 @@
         }
       }
 
+      async function saveImagemapToSupabase(retryCount = 0, maxRetries = 3) {
+        if (!profile || !profile.userId) {
+          Swal.fire({
+            icon: "error",
+            title: "โปรไฟล์ยังไม่โหลด",
+            text: "กรุณารอสักครู่แล้วลองใหม่",
+          });
+          return;
+        }
+        const imagemapJson = document.getElementById("textBox2").value.trim();
+        const title = document.getElementById("textBox1").value.trim();
+        if (!title) {
+          Swal.fire({
+            icon: "error",
+            title: "กรุณากรอกหัวข้อ",
+            text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
+          });
+          return;
+        }
+        if (!imagemapJson) {
+          Swal.fire({
+            icon: "error",
+            title: "กรุณากรอก JSON",
+            text: "JSON ไม่สามารถเป็นค่าว่างได้",
+          });
+          return;
+        }
+        let imagemapObj;
+        try {
+          imagemapObj = JSON.parse(imagemapJson);
+          if (imagemapObj.type !== "imagemap") {
+            throw new Error("JSON must have type: 'imagemap'");
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: "error",
+            title: "JSON ไม่ถูกต้อง",
+            text: `กรุณาตรวจสอบ JSON Imagemap ของคุณ: ${error.message}`,
+          });
+          return;
+        }
+        const data = {
+          title: title,
+          text1: imagemapJson,
+          userId: profile.userId,
+          displayName: profile.displayName,
+          type: "imagemap"
+        };
+        Swal.fire({
+          title: "กำลังบันทึกข้อมูล...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+        try {
+          const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+          if (!response.ok) {
+            const text = await response.text();
+            let errorMessage = `Network response was not ok: ${response.status}`;
+            if (response.status === 400) {
+              errorMessage = `Invalid request: ${text}`;
+            } else if (response.status === 500) {
+              errorMessage = `Server error: ${text}`;
+            }
+            throw new Error(errorMessage);
+          }
+          const result = await response.json();
+          if (result.success) {
+            Swal.fire({
+              icon: "success",
+              title: "บันทึกข้อมูลเรียบร้อย!",
+              timer: 1500,
+              showConfirmButton: false,
+            });
+            clearInputs();
+            fetchDataList();
+          } else {
+            throw new Error(result.error || "Unknown error occurred");
+          }
+        } catch (error) {
+          console.error("Error saving data:", error);
+          if (retryCount < maxRetries) {
+            console.log(`Retrying saveImagemapToSupabase (${retryCount + 1}/${maxRetries})...`);
+            setTimeout(() => saveImagemapToSupabase(retryCount + 1, maxRetries), 1000);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+              text: error.message,
+            });
+          }
+        }
+      }
+
       async function fetchDataList(retryCount = 0, maxRetries = 3) {
         if (!profile || !profile.userId) {
           console.warn("Profile not loaded yet, skipping fetchDataList");
           return;
         }
-        console.log("Fetching data for userId:", profile.userId);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
             method: "GET",
@@ -1127,7 +1183,6 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
-          console.log("Fetched data:", data);
           if (!Array.isArray(data)) {
             throw new Error("Data is not an array");
           }
@@ -1138,7 +1193,7 @@
               return `
                 <div class="card" id="item-${item.id}">
                   <div class="card-body">
-                    <h5 class="card-title">${title}</h5>
+                    <h5 class="card-title">${title} (${item.type})</h5>
                     <div class="btn-group">
                       <button class="btn btn-sm btn-primary" onclick="shareListItem('${item.id}')">แชร์</button>
                       <button class="btn btn-sm btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
@@ -1175,26 +1230,25 @@
       }
 
       async function showMessage(id, retryCount = 0, maxRetries = 1) {
-        console.log("Showing message for id:", id, "listData:", window.listData);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            return showMessage(id, retryCount + 1, maxRetries);
+            showMessage(id, retryCount + 1, maxRetries);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถโหลดข้อมูลได้",
+              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+              confirmButtonText: "รีเฟรช",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                fetchDataList();
+              }
+            });
           }
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถโหลดข้อมูลได้",
-            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
           return;
         }
-
         const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("showMessage: Item not found for id:", id);
@@ -1210,7 +1264,6 @@
           });
           return;
         }
-
         if (!item.text1 || !item.type) {
           console.error("showMessage: Missing text1 or type for item:", item);
           Swal.fire({
@@ -1220,11 +1273,6 @@
           });
           return;
         }
-
-        document.getElementById("textBox1").value = item.title || "";
-        document.getElementById("textBox2").value = item.text1;
-        window.currentItemId = id;
-
         const flexContainer = document.getElementById("flex1");
         if (!flexContainer) {
           console.error("Flex container not found");
@@ -1235,12 +1283,11 @@
           });
           return;
         }
-
         flexContainer.innerHTML = "";
         try {
+          document.getElementById("textBox2").value = item.text1;
+          formatJson(); // Automatically format JSON in textBox2
           const obj = JSON.parse(item.text1);
-          console.log("Parsed message object:", obj);
-
           if (item.type === "flex") {
             if (!isValidFlexMessage(obj)) {
               throw new Error("Invalid Flex message structure");
@@ -1264,77 +1311,15 @@
               console.error("flex2html function is not available");
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
-          } else if (item.type === "template") {
-            if (!isValidTemplateMessage(obj)) {
-              throw new Error("Invalid Template message structure: Must have a 'type' field");
-            }
-            if (obj.type === "buttons") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                  ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
-                  <div class="text">${escapeHtml(obj.text || '')}</div>
-                  ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map(action => `
-                    <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                  `).join('') : ''}
-                </div>
-              `;
-            } else if (obj.type === "confirm") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="text">${escapeHtml(obj.text || '')}</div>
-                  <div class="confirm-links">
-                    ${obj.actions && Array.isArray(obj.actions) ? obj.actions.map(action => `
-                      <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else if (obj.type === "carousel") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="carousel">
-                    ${obj.columns && Array.isArray(obj.columns) ? obj.columns.map(column => `
-                      <div class="carousel-item">
-                        ${column.thumbnailImageUrl ? `<img src="${column.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${column.imageAspectRatio || 'rectangle'}; object-fit: ${column.imageSize || 'cover'}; background-color: ${column.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                        ${column.title ? `<div class="title">${escapeHtml(column.title)}</div>` : ''}
-                        <div class="text">${escapeHtml(column.text || '')}</div>
-                        ${column.actions && Array.isArray(column.actions) ? column.actions.map(action => `
-                          <a href="${action.uri || '#'}" target="_blank" class="action-link">${escapeHtml(action.label || 'Action')}</a>
-                        `).join('') : ''}
-                      </div>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else if (obj.type === "image_carousel") {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <div class="carousel">
-                    ${obj.columns && Array.isArray(obj.columns) ? obj.columns.map(column => `
-                      <div class="carousel-item">
-                        <img src="${column.imageUrl || 'https://via.placeholder.com/300?text=Image+Not+Found'}" alt="Image" style="object-fit: cover;" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Image+Not+Found';">
-                        <a href="${column.action && column.action.uri ? column.action.uri : '#'}" target="_blank" class="action-link">${escapeHtml(column.action && column.action.label ? column.action.label : 'Action')}</a>
-                      </div>
-                    `).join('') : ''}
-                  </div>
-                </div>
-              `;
-            } else {
-              flexContainer.innerHTML = `
-                <div id="template-preview">
-                  <p>Unrecognized template type: ${escapeHtml(obj.type)}</p>
-                  <pre class="json-fallback">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>
-                </div>
-              `;
-            }
+          } else if (item.type === "template" || item.type === "imagemap") {
+            flexContainer.innerHTML = `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
             throw new Error("Unknown message type");
           }
         } catch (e) {
-          console.error("Error in showMessage:", e, "item:", item);
+          console.error("Error parsing or displaying message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อความได้",
@@ -1347,7 +1332,6 @@
         if (!profile || !profile.userId) {
           throw new Error("โปรไฟล์ยังไม่โหลด");
         }
-        console.log("Deleting item with id:", id);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
             method: "DELETE",
@@ -1370,7 +1354,6 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
-          console.log("Delete response:", data);
           if (!data.success) {
             throw new Error(data.error || "Unknown error occurred");
           }
@@ -1409,7 +1392,6 @@
               .then(() => {
                 Swal.fire("ลบแล้ว!", "รายการได้ถูกลบเรียบร้อยแล้ว", "success");
                 fetchDataList();
-                window.currentItemId = null;
               })
               .catch((error) => {
                 console.error("Error deleting item:", error);
@@ -1436,26 +1418,25 @@
       }
 
       async function shareListItem(id, retryCount = 0, maxRetries = 1) {
-        console.log("Sharing item with id:", id);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
             await fetchDataList();
-            return shareListItem(id, retryCount + 1, maxRetries);
+            shareListItem(id, retryCount + 1, maxRetries);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถโหลดข้อมูลได้",
+              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
+              confirmButtonText: "รีเฟรช",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                fetchDataList();
+              }
+            });
           }
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถโหลดข้อมูลได้",
-            text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
           return;
         }
-
         const item = window.listData.find(item => String(item.id) === String(id));
         if (!item) {
           console.error("shareListItem: Item not found for id:", id);
@@ -1471,7 +1452,6 @@
           });
           return;
         }
-
         if (!item.text1 || !item.type) {
           console.error("shareListItem: Missing text1 or type for item:", item);
           Swal.fire({
@@ -1481,38 +1461,27 @@
           });
           return;
         }
-
         try {
-          const obj = JSON.parse(item.text1);
+          document.getElementById("textBox2").value = item.text1;
+          const messageObjRaw = JSON.parse(item.text1);
           let messageObj;
           if (item.type === "flex") {
-            if (!isValidFlexMessage(obj)) {
+            if (!isValidFlexMessage(messageObjRaw)) {
               throw new Error("Invalid Flex message structure");
             }
-            if (obj.type === "carousel" || obj.type === "bubble") {
-              messageObj = {
-                type: "flex",
-                altText: item.title || "Flex Message",
-                contents: obj,
-              };
-            } else {
-              messageObj = obj;
-            }
-          } else if (item.type === "template") {
-            if (!isValidTemplateMessage(obj)) {
-              throw new Error("Invalid Template message structure: Must have a 'type' field");
-            }
             messageObj = {
-              type: "template",
-              altText: item.title || "Template Message",
-              template: obj
+              type: "flex",
+              altText: item.title || "Flex Message",
+              contents: messageObjRaw.type === "bubble" || messageObjRaw.type === "carousel" ? messageObjRaw : messageObjRaw.contents
             };
+          } else if (item.type === "template" || item.type === "imagemap") {
+            messageObj = messageObjRaw;
           } else {
             throw new Error("Unknown message type");
           }
           sendMessage(messageObj);
         } catch (e) {
-          console.error("Error in shareListItem:", e, "item:", item);
+          console.error("Error parsing or sending message JSON:", e, "item:", item);
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถส่งข้อความได้",
@@ -1525,30 +1494,15 @@
         if (liff.isApiAvailable("sendMessages")) {
           liff
             .sendMessages([messageObj])
-            .then((result) => {
-              if (result && result.status === "success") {
-                Swal.fire({
-                  icon: "success",
-                  title: "ส่งข้อความเรียบร้อย!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else if (result && result.status === "cancel") {
-                Swal.fire({
-                  icon: "info",
-                  title: "คุณยกเลิกการแชร์",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              } else {
-                console.warn("Unexpected sendMessages result:", result);
-                Swal.fire({
-                  icon: "info",
-                  title: "การแชร์ถูกยกเลิกหรือไม่สำเร็จ",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              }
+            .then(() => {
+              Swal.fire({
+                icon: "success",
+                title: "ส่งข้อความเรียบร้อย!",
+                timer: 1500,
+                showConfirmButton: false,
+              });
+              document.getElementById("textBox1").value = "";
+              document.getElementById("textBox2").value = "";
             })
             .catch((error) => {
               console.error("Error sending message:", error);
@@ -1562,7 +1516,7 @@
           Swal.fire({
             icon: "error",
             title: "ฟีเจอร์นี้ไม่รองรับ",
-            text: "แอพพลิเคชันนี้ไม่รองรับการแชร์ข้อความ",
+            text: "แอพพลิเคชันนี้ไม่รองรับการส่งข้อความ",
           });
         }
       }
@@ -1572,7 +1526,6 @@
         const textBox2 = document.getElementById("textBox2");
         if (textBox1) textBox1.value = "";
         if (textBox2) textBox2.value = "";
-        window.currentItemId = null;
       }
     </script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -1580,3 +1533,4 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </body>
 </html>
+```
