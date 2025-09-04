@@ -160,6 +160,12 @@
         border-radius: 5px;
         text-decoration: none;
       }
+      pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -193,7 +199,7 @@
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON actions สำหรับ Template)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template)"
         ></textarea>
       </div>
       <div
@@ -257,6 +263,9 @@
         <button class="btn btn-sticker" onclick="sendSticker()">
           Send Sticker
         </button>
+        <button class="btn btn-secondary" onclick="formatJson()">
+          Format JSON
+        </button>
         <button class="btn btn-secondary" onclick="clearText()">
           ล้างข้อความทั้งหมด
         </button>
@@ -277,6 +286,7 @@
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
       window.listData = window.listData || [];
+      let jsonIndentLevel = 2; // Default indentation: 2 spaces
 
       liff
         .init({ liffId })
@@ -358,7 +368,6 @@
       function showTemplate() {
         const flexContainer = document.getElementById("flex1");
         flexContainer.innerHTML = "";
-        const altText = document.getElementById("textBox1").value.trim();
         const templateJson = document.getElementById("textBox2").value.trim();
         if (!templateJson) {
           flexContainer.innerHTML = '<p class="text-danger">Please provide a valid JSON in the second input.</p>';
@@ -366,24 +375,44 @@
         }
         try {
           const templateObject = JSON.parse(templateJson);
-          const templateMessage = {
-            type: "template",
-            altText: altText || "Template Message",
-            template: templateObject
-          };
-          flexContainer.innerHTML = `
-            <div id="template-preview">
-              ${templateObject.thumbnailImageUrl ? `<img src="${templateObject.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${templateObject.imageAspectRatio || 'rectangle'}; object-fit: ${templateObject.imageSize || 'cover'}; background-color: ${templateObject.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-              ${templateObject.title ? `<div class="title">${escapeHtml(templateObject.title)}</div>` : ''}
-              ${templateObject.text ? `<div class="text">${escapeHtml(templateObject.text)}</div>` : ''}
-              ${Array.isArray(templateObject.actions) ? templateObject.actions.map(action => `
-                <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
-              `).join('') : ''}
-            </div>
-          `;
+          flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
         } catch (error) {
           console.error("Error parsing JSON:", error);
           flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
+        }
+      }
+
+      function formatJson() {
+        const textBox2 = document.getElementById("textBox2");
+        const jsonString = textBox2.value.trim();
+        if (!jsonString) {
+          Swal.fire({
+            icon: "error",
+            title: "No JSON to format",
+            text: "Please provide a JSON string in the second input.",
+          });
+          return;
+        }
+        try {
+          const jsonObj = JSON.parse(jsonString);
+          // Cycle through indentation levels: 2 -> 4 -> 0 -> 2
+          jsonIndentLevel = jsonIndentLevel === 2 ? 4 : jsonIndentLevel === 4 ? 0 : 2;
+          const indentLabel = jsonIndentLevel === 0 ? "minified" : `${jsonIndentLevel} spaces`;
+          textBox2.value = JSON.stringify(jsonObj, null, jsonIndentLevel);
+          Swal.fire({
+            icon: "success",
+            title: "JSON Formatted",
+            text: `Formatted with ${indentLabel} indentation.`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        } catch (error) {
+          console.error("Error formatting JSON:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Invalid JSON",
+            text: `Please check your JSON input: ${error.message}`,
+          });
         }
       }
 
@@ -1114,21 +1143,8 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            const templateMessage = {
-              type: "template",
-              altText: item.title || "Template Message",
-              template: obj
-            };
-            flexContainer.innerHTML = `
-              <div id="template-preview">
-                ${obj.thumbnailImageUrl ? `<img src="${obj.thumbnailImageUrl}" alt="Thumbnail" style="aspect-ratio: ${obj.imageAspectRatio || 'rectangle'}; object-fit: ${obj.imageSize || 'cover'}; background-color: ${obj.imageBackgroundColor || '#FFFFFF'};" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Thumbnail+Not+Found';">` : ''}
-                ${obj.title ? `<div class="title">${escapeHtml(obj.title)}</div>` : ''}
-                ${obj.text ? `<div class="text">${escapeHtml(obj.text)}</div>` : ''}
-                ${Array.isArray(obj.actions) ? obj.actions.map(action => `
-                  <a href="${action.uri || '#'}" target="_blank" class="action-btn">${escapeHtml(action.label || 'Action')}</a>
-                `).join('') : ''}
-              </div>
-            `;
+            document.getElementById("textBox2").value = item.text1;
+            flexContainer.innerHTML = `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
