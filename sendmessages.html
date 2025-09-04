@@ -1147,7 +1147,7 @@
           text1: JSON.stringify({ ...imagemapObj, messageType: "imagemap" }),
           userId: profile.userId,
           displayName: profile.displayName,
-          type: "flex" // Use "flex" to bypass Supabase restriction
+          type: "flex"
         };
         Swal.fire({
           title: "กำลังบันทึกข้อมูล...",
@@ -1554,7 +1554,15 @@
       }
 
       function sendMessage(messageObj) {
-        if (liff.isApiAvailable("sendMessages")) {
+        if (!liff.isInClient()) {
+          Swal.fire({
+            icon: "error",
+            title: "ไม่สามารถส่งข้อความได้",
+            text: "กรุณาเปิดแอปพลิเคชันนี้ใน LINE เพื่อส่งข้อความ",
+          });
+          return;
+        }
+        try {
           liff
             .sendMessages([messageObj])
             .then(() => {
@@ -1572,14 +1580,15 @@
               Swal.fire({
                 icon: "error",
                 title: "เกิดข้อผิดพลาดในการส่งข้อความ",
-                text: error.message,
+                text: error.message || "ไม่สามารถส่งข้อความได้ กรุณาตรวจสอบการกำหนดค่า LIFF",
               });
             });
-        } else {
+        } catch (error) {
+          console.error("Error initiating sendMessages:", error);
           Swal.fire({
             icon: "error",
-            title: "ฟีเจอร์นี้ไม่รองรับ",
-            text: "แอพพลิเคชันนี้ไม่รองรับการส่งข้อความ",
+            title: "เกิดข้อผิดพลาด",
+            text: "ไม่สามารถเริ่มต้นการส่งข้อความได้ กรุณาตรวจสอบ LIFF ID และการกำหนดค่าใน LINE Developers Console",
           });
         }
       }
