@@ -6,10 +6,8 @@
     <title>LINE SHARE MESSAGE</title>
     <link rel="stylesheet" href="flex2html.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-pulse-icon@0.1.0/dist/L.Icon.Pulse.css" />
     <script type="text/javascript" src="flex2html.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="https://unpkg.com/leaflet-pulse-icon@0.1.0/dist/L.Icon.Pulse.js"></script>
     <style>
       body {
         background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
@@ -230,6 +228,51 @@
         display: none;
         margin-bottom: 15px;
       }
+      .pulse-marker {
+        background-color: rgba(255, 99, 71, 0.2);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 60px;
+        height: 60px;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(0.8);
+          opacity: 0.7;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.3;
+        }
+        100% {
+          transform: scale(0.8);
+          opacity: 0.7;
+        }
+      }
+      .popup-header {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #333;
+        text-align: center;
+        margin-bottom: 5px;
+      }
+      .popup-button {
+        background-color: #2575fc;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 10px;
+        transition: all 0.3s ease;
+      }
+      .popup-button:hover {
+        background-color: #1e5fc7;
+      }
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -355,6 +398,10 @@
         <button class="btn btn-secondary" onclick="clearText()">
           ล้างข้อความทั้งหมด
         </button>
+        <button class="btn btn-primary" id="shareLocationBtn">
+          Share Location
+        </button>
+        <button class="btn btn-primary" id="refreshBtn">Share Flex</button>
       </div>
       <div class="mt-3 mb-3">
         <button class="btn btn-success w-100" onclick="saveToSupabase()">
@@ -389,7 +436,7 @@
               document.getElementById("pictureUrl").src = profile.pictureUrl;
               document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
               fetchDataList();
-              fetchLocations();
+              loadLocations();
             }).catch((err) => {
               console.error("Error getting LINE profile:", err);
               Swal.fire({
@@ -416,42 +463,54 @@
         element.style.display = element.style.display === "none" ? "block" : "none";
       }
 
-      function addPulseMarker(latlng, pictureUrl, displayName, timestamp) {
-        if (!L.Icon.Pulse) {
-          console.error("L.Icon.Pulse is not available. Ensure leaflet-pulse-icon is loaded.");
-          Swal.fire({
-            icon: "error",
-            title: "ข้อผิดพลาด",
-            text: "ไม่สามารถโหลดปลั๊กอิน Pulse Icon ได้ กรุณารีเฟรชหน้าเว็บ",
-          });
-          const marker = L.marker(latlng).addTo(map);
-          marker.bindPopup(`
-            <div style="text-align: center;">
-              <img src="${pictureUrl}" alt="User" style="width: 50px; height: 50px; border-radius: 50%; margin-bottom: 5px;" />
-              <div><strong>${displayName}</strong></div>
-              <div>${new Date(timestamp).toLocaleString('th-TH')}</div>
-            </div>
-          `).openPopup();
-          markers.push(marker);
-          return;
-        }
-        const pulseIcon = L.Icon.Pulse({
-          iconSize: [20, 20],
-          color: 'red'
+      function showLoading() {
+        Swal.fire({
+          title: "กำลังโหลด...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
         });
-        const marker = L.marker(latlng, { icon: pulseIcon }).addTo(map);
-        const popupContent = `
-          <div style="text-align: center;">
-            <img src="${pictureUrl}" alt="User" style="width: 50px; height: 50px; border-radius: 50%; margin-bottom: 5px;" />
-            <div><strong>${displayName}</strong></div>
-            <div>${new Date(timestamp).toLocaleString('th-TH')}</div>
+      }
+
+      function hideLoading() {
+        Swal.close();
+      }
+
+      function navigateTo(lat, lng) {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      }
+
+      function addPulseMarker(position, imageUrl, displayName, timestamp) {
+        const iconHtml = `<div style="position: relative; width: 60px; height: 60px;">
+          <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
+          <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
+        </div>`;
+
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: '',
+          iconSize: [60, 60],
+          iconAnchor: [30, 30],
+          popupAnchor: [0, -30]
+        });
+
+        const marker = L.marker(position, { icon: customIcon }).addTo(map);
+        marker.bindPopup(`
+          <div class="popup-header">${displayName}</div>
+          <div class="p-3 flex justify-center">
+            <img src="${imageUrl}" class="w-20 h-20 rounded-full shadow">
           </div>
-        `;
-        marker.bindPopup(popupContent).openPopup();
+          <div class="p-2 text-center">
+            <p>อัปเดตล่าสุด: ${new Date(timestamp).toLocaleString('th-TH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} น.</p>
+            <button class="popup-button" onclick="navigateTo(${position[0]},${position[1]})">ไปหาเพื่อนคนนี้</button>
+          </div>
+        `);
         markers.push(marker);
       }
 
-      async function fetchLocations() {
+      async function loadLocations() {
+        showLoading();
         try {
           const res = await fetch(SUPABASE_FUNCTIONS_URL, {
             method: 'POST',
@@ -465,7 +524,7 @@
           if (!result.data) {
             throw new Error("No data returned from getLocations");
           }
-          markers.forEach(m => map.removeLayer(m));
+          markers.forEach(m => map && map.removeLayer(m));
           markers = [];
           document.getElementById('userList').innerHTML = '';
 
@@ -474,7 +533,9 @@
           result.data.forEach(loc => {
             if (!loc.latitude || !loc.longitude || !loc.pictureUrl) return;
             const pos = [parseFloat(loc.latitude), parseFloat(loc.longitude)];
-            addPulseMarker(pos, loc.pictureUrl, loc.displayName, loc.timestamp);
+            if (map) {
+              addPulseMarker(pos, loc.pictureUrl, loc.displayName, loc.timestamp);
+            }
 
             const listItem = document.createElement('div');
             listItem.className = "list-item";
@@ -487,7 +548,15 @@
               <button class="btn btn-primary text-xs">📍 นำทาง</button>
             `;
             listItem.querySelector('button').addEventListener('click', () => {
-              map.setView(pos, 17);
+              if (map) {
+                map.setView(pos, 17);
+              } else {
+                Swal.fire({
+                  icon: "info",
+                  title: "กรุณาแสดงแผนที่ก่อน",
+                  text: "คลิก 'Get Loc' หรือ 'Show Location' เพื่อแสดงแผนที่",
+                });
+              }
             });
             document.getElementById('userList').appendChild(listItem);
           });
@@ -498,7 +567,73 @@
             title: "ไม่สามารถดึงข้อมูลตำแหน่งได้",
             text: error.message,
           });
+        } finally {
+          hideLoading();
         }
+      }
+
+      function getLocation() {
+        if (!navigator.geolocation) {
+          Swal.fire({
+            icon: "error",
+            title: "Geolocation ไม่รองรับ",
+            text: "เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง",
+          });
+          return;
+        }
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            document.getElementById("textBox1").value = latitude;
+            document.getElementById("textBox2").value = longitude;
+            document.getElementById("locationInputs").style.display = "block";
+
+            const flexContainer = document.getElementById("flex1");
+            flexContainer.innerHTML = '<div id="map"></div>';
+            flexContainer.style.display = "block";
+
+            map = L.map('map').setView([latitude, longitude], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
+            loadLocations();
+
+            Swal.fire({
+              icon: "success",
+              title: "ดึงตำแหน่งสำเร็จ",
+              text: `Latitude: ${latitude}, Longitude: ${longitude}`,
+              timer: 2000,
+              showConfirmButton: false,
+            });
+          },
+          (error) => {
+            let errorMessage;
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = "ผู้ใช้ปฏิเสธการร้องขอตำแหน่ง";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = "ข้อมูลตำแหน่งไม่พร้อมใช้งาน";
+                break;
+              case error.TIMEOUT:
+                errorMessage = "การร้องขอตำแหน่งหมดเวลา";
+                break;
+              default:
+                errorMessage = "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
+                break;
+            }
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถดึงตำแหน่งได้",
+              text: errorMessage,
+            });
+          }
+        );
+        hideLoading();
       }
 
       function showLocation() {
@@ -540,37 +675,217 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           }).addTo(map);
 
-          if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                const latlng = [position.coords.latitude, position.coords.longitude];
-                map.setView(latlng, 17);
-                document.getElementById("textBox1").value = latlng[0];
-                document.getElementById("textBox2").value = latlng[1];
-                addPulseMarker(latlng, profile.pictureUrl, profile.displayName, new Date().toISOString());
-                fetchLocations();
-              },
-              (error) => {
-                console.error("Geolocation error:", error);
-                addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
-                fetchLocations();
-                Swal.fire({
-                  icon: "warning",
-                  title: "ไม่สามารถดึงตำแหน่งปัจจุบัน",
-                  text: "ใช้พิกัดจากช่องป้อนข้อมูลหรือค่าเริ่มต้น",
-                });
-              }
-            );
-          } else {
-            addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
-            fetchLocations();
-          }
+          addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
+          loadLocations();
 
           flexContainer.style.display = "block";
         } catch (error) {
           console.error("Error showing location:", error);
           flexContainer.innerHTML = `<p class="text-danger">Invalid location data: ${error.message}</p>`;
+          Swal.fire({
+            icon: "error",
+            title: "ข้อมูลตำแหน่งไม่ถูกต้อง",
+            text: error.message,
+          });
         }
+      }
+
+      async function shareFlex() {
+        if (!navigator.geolocation) {
+          Swal.fire({
+            icon: "error",
+            title: "Geolocation ไม่รองรับ",
+            text: "เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง",
+          });
+          return;
+        }
+        if (!profile || !profile.userId) {
+          Swal.fire({
+            icon: "error",
+            title: "โปรไฟล์ยังไม่โหลด",
+            text: "กรุณารอสักครู่แล้วลองใหม่",
+          });
+          return;
+        }
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const flex = [{
+              type: "location",
+              title: profile.displayName,
+              address: "คลิกเพื่อเปิดแผนที่",
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude
+            }, {
+              type: "flex",
+              altText: "My Location",
+              contents: {
+                type: "bubble",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      contents: [
+                        {
+                          type: "image",
+                          url: "https://media.giphy.com/media/SWWLF8WluVJ5vJjMln/giphy.gif",
+                          size: "xs",
+                          flex: 0
+                        },
+                        {
+                          type: "text",
+                          text: "สถานที่ของฉัน",
+                          gravity: "center",
+                          weight: "bold"
+                        }
+                      ]
+                    },
+                    {
+                      type: "separator",
+                      margin: "md"
+                    },
+                    {
+                      type: "box",
+                      layout: "horizontal",
+                      contents: [
+                        {
+                          type: "box",
+                          layout: "vertical",
+                          contents: [
+                            {
+                              type: "image",
+                              url: profile.pictureUrl
+                            }
+                          ],
+                          width: "60px",
+                          height: "60px",
+                          cornerRadius: "150px",
+                          borderWidth: "2px",
+                          borderColor: "#ff9966"
+                        },
+                        {
+                          type: "text",
+                          text: profile.displayName,
+                          gravity: "center",
+                          margin: "md"
+                        }
+                      ],
+                      margin: "md"
+                    },
+                    {
+                      type: "button",
+                      action: {
+                        type: "uri",
+                        label: "คลิกนำทาง",
+                        uri: `https://www.google.com/maps/dir/?api=1&destination=${pos.coords.latitude},${pos.coords.longitude}`
+                      },
+                      style: "primary",
+                      height: "sm",
+                      margin: "md",
+                      color: "#ff9966"
+                    },
+                    {
+                      type: "button",
+                      action: {
+                        type: "uri",
+                        label: "เยี่ยมบ้านเพื่อน",
+                        uri: `https://liff.line.me/${liffId}`
+                      },
+                      style: "primary",
+                      height: "sm",
+                      margin: "md",
+                      color: "#578ee4"
+                    }
+                  ]
+                }
+              }
+            }];
+            sendMessage(flex);
+            hideLoading();
+          },
+          (error) => {
+            hideLoading();
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถดึงตำแหน่งได้",
+              text: "กรุณาอนุญาตการเข้าถึงตำแหน่งหรือลองอีกครั้ง",
+            });
+          }
+        );
+      }
+
+      async function shareLocation() {
+        if (!navigator.geolocation) {
+          Swal.fire({
+            icon: "error",
+            title: "Geolocation ไม่รองรับ",
+            text: "เบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง",
+          });
+          return;
+        }
+        if (!profile || !profile.userId) {
+          Swal.fire({
+            icon: "error",
+            title: "โปรไฟล์ยังไม่โหลด",
+            text: "กรุณารอสักครู่แล้วลองใหม่",
+          });
+          return;
+        }
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const data = {
+              userId: profile.userId,
+              displayName: profile.displayName,
+              pictureUrl: profile.pictureUrl,
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              timestamp: new Date().toISOString()
+            };
+            try {
+              const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: 'saveLocation', data })
+              });
+              if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
+              }
+              const result = await response.json();
+              if (result.success) {
+                loadLocations();
+                Swal.fire({
+                  icon: "success",
+                  title: "บันทึกตำแหน่งสำเร็จ",
+                  timer: 1500,
+                  showConfirmButton: false,
+                });
+              } else {
+                throw new Error(result.error || "Unknown error occurred");
+              }
+            } catch (error) {
+              console.error("Error sharing location:", error);
+              Swal.fire({
+                icon: "error",
+                title: "ไม่สามารถบันทึกตำแหน่งได้",
+                text: error.message,
+              });
+            } finally {
+              hideLoading();
+            }
+          },
+          (error) => {
+            hideLoading();
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถดึงตำแหน่งได้",
+              text: "กรุณาอนุญาตการเข้าถึงตำแหน่งหรือลองอีกครั้ง",
+            });
+          }
+        );
       }
 
       function showImage() {
@@ -744,7 +1059,7 @@
               map.remove();
               map = null;
             }
-            markers.forEach(m => map.removeLayer(m));
+            markers.forEach(m => map && map.removeLayer(m));
             markers = [];
             document.getElementById('userList').innerHTML = '';
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
@@ -805,56 +1120,6 @@
         sendMessage({
           type: "text",
           text: document.getElementById("textBox2").value,
-        });
-      }
-
-      function getLocation() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(showPosition, showError);
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Geolocation not supported",
-            text: "Your browser does not support geolocation.",
-          });
-        }
-      }
-
-      function showPosition(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        document.getElementById("textBox1").value = latitude;
-        document.getElementById("textBox2").value = longitude;
-        document.getElementById("locationInputs").style.display = "block";
-        Swal.fire({
-          icon: "success",
-          title: "Location retrieved",
-          text: `Latitude: ${latitude}, Longitude: ${longitude}`,
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      }
-
-      function showError(error) {
-        let errorMessage;
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "User denied the request for Geolocation.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "The request to get user location timed out.";
-            break;
-          case error.UNKNOWN_ERROR:
-            errorMessage = "An unknown error occurred.";
-            break;
-        }
-        Swal.fire({
-          icon: "error",
-          title: "Error getting location",
-          text: errorMessage,
         });
       }
 
@@ -1150,7 +1415,7 @@
             });
             clearInputs();
             fetchDataList();
-            fetchLocations();
+            loadLocations();
           } else {
             throw new Error(result.error || "Unknown error occurred");
           }
@@ -1297,7 +1562,7 @@
             });
             clearInputs();
             fetchDataList();
-            fetchLocations();
+            loadLocations();
           } else {
             throw new Error(result.error || "Unknown error occurred");
           }
@@ -1449,7 +1714,7 @@
               throw new Error("Invalid Flex message structure");
             }
             let flexMessage;
-            if (obj.type === "carousel" || obj.type === "bubble") {
+            if (obj.type === "bubble" || obj.type === "carousel") {
               flexMessage = {
                 type: "flex",
                 altText: item.title || "Flex Message",
@@ -1461,7 +1726,6 @@
             if (typeof flex2html === "function") {
               flex2html("flex1", flexMessage);
               flexContainer.style.display = "block";
-              flexContainer.classList.remove("bg-white", "p-2", "rounded");
               flexContainer.scrollIntoView({ behavior: "smooth" });
             } else {
               console.error("flex2html function is not available");
@@ -1486,7 +1750,7 @@
               obj.displayName || profile.displayName,
               obj.timestamp || new Date().toISOString()
             );
-            fetchLocations();
+            loadLocations();
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
@@ -1566,7 +1830,7 @@
               .then(() => {
                 Swal.fire("ลบแล้ว!", "รายการได้ถูกลบเรียบร้อยแล้ว", "success");
                 fetchDataList();
-                fetchLocations();
+                loadLocations();
               })
               .catch((error) => {
                 console.error("Error deleting item:", error);
@@ -1578,18 +1842,6 @@
               });
           }
         });
-      }
-
-      function escapeHtml(unsafe) {
-        if (typeof unsafe !== "string") {
-          return "";
-        }
-        return unsafe
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
       }
 
       async function shareListItem(id, retryCount = 0, maxRetries = 1) {
@@ -1647,107 +1899,73 @@
             messageObj = {
               type: "flex",
               altText: item.title || "Flex Message",
-              contents: messageObjRaw.type === "bubble" || messageObjRaw.type === "carousel" ? messageObjRaw : messageObjRaw.contents
+              contents: messageObjRaw.type === "bubble" || messageObjRaw.type === "carousel" ? messageObjRaw : messageObjRaw.contents,
             };
-          } else if (item.type === "template") {
+          } else if (item.type === "template" || item.type === "location") {
             messageObj = messageObjRaw;
-          } else if (item.type === "location") {
-            if (!messageObjRaw.latitude || !messageObjRaw.longitude) {
-              throw new Error("Invalid location message format");
-            }
-            messageObj = {
-              type: "location",
-              title: messageObjRaw.title || "My Location",
-              address: messageObjRaw.address || "View on map",
-              latitude: parseFloat(messageObjRaw.latitude),
-              longitude: parseFloat(messageObjRaw.longitude)
-            };
           } else {
             throw new Error("Unknown message type");
           }
           sendMessage(messageObj);
-        } catch (e) {
-          console.error("Error parsing or sending message JSON:", e, "item:", item);
+        } catch (error) {
+          console.error("Error sharing item:", error);
           Swal.fire({
             icon: "error",
-            title: "ไม่สามารถส่งข้อความได้",
-            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
+            title: "ไม่สามารถแชร์ข้อมูลได้",
+            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${error.message}`,
           });
         }
       }
 
       function sendMessage(messageObj) {
-        if (liff.isApiAvailable("shareTargetPicker")) {
-          liff
-            .shareTargetPicker([messageObj])
-            .then((result) => {
-              if (result && result.status === "success") {
-                Swal.fire({
-                  icon: "success",
-                  title: "ส่งข้อความเรียบร้อย!",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-                document.getElementById("textBox1").value = "";
-                document.getElementById("textBox2").value = "";
-                document.getElementById("locationTitle").value = "";
-                document.getElementById("locationAddress").value = "";
-                document.getElementById("locationInputs").style.display = "none";
-                if (map) {
-                  map.remove();
-                  map = null;
-                }
-                markers.forEach(m => map.removeLayer(m));
-                markers = [];
-                document.getElementById('userList').innerHTML = '';
-              } else {
-                console.warn("Share cancelled or failed:", result);
-                Swal.fire({
-                  icon: "info",
-                  title: "ยกเลิกการแชร์หรือแชร์ไม่สำเร็จ",
-                  timer: 1500,
-                  showConfirmButton: false,
-                });
-              }
-            })
-            .catch((error) => {
-              console.error("Error sending message:", error);
-              Swal.fire({
-                icon: "error",
-                title: "เกิดข้อผิดพลาดในการส่งข้อความ",
-                text: error.message,
-              });
+        showLoading();
+        const messages = Array.isArray(messageObj) ? messageObj : [messageObj];
+        liff
+          .shareTargetPicker(messages)
+          .then(() => {
+            Swal.fire({
+              icon: "success",
+              title: "แชร์สำเร็จ!",
+              text: "ข้อความถูกแชร์เรียบร้อยแล้ว",
+              timer: 1500,
+              showConfirmButton: false,
             });
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "ฟีเจอร์นี้ไม่รองรับ",
-            text: "แอพพลิเคชันนี้ไม่รองรับการแชร์ข้อความ",
+          })
+          .catch((error) => {
+            console.error("Error sharing message:", error);
+            Swal.fire({
+              icon: "error",
+              title: "ไม่สามารถแชร์ข้อความได้",
+              text: error.message,
+            });
+          })
+          .finally(() => {
+            hideLoading();
           });
-        }
       }
 
       function clearInputs() {
-        const textBox1 = document.getElementById("textBox1");
-        const textBox2 = document.getElementById("textBox2");
-        const locationTitle = document.getElementById("locationTitle");
-        const locationAddress = document.getElementById("locationAddress");
-        const locationInputs = document.getElementById("locationInputs");
-        const flexContainer = document.getElementById("flex1");
-        if (textBox1) textBox1.value = "";
-        if (textBox2) textBox2.value = "";
-        if (locationTitle) locationTitle.value = "";
-        if (locationAddress) locationAddress.value = "";
-        if (locationInputs) locationInputs.style.display = "none";
-        if (flexContainer) flexContainer.style.display = "none";
-        if (map) {
-          map.remove();
-          map = null;
-        }
-        markers.forEach(m => map.removeLayer(m));
-        markers = [];
-        document.getElementById('userList').innerHTML = '';
+        document.getElementById("textBox1").value = "";
+        document.getElementById("textBox2").value = "";
+        document.getElementById("locationTitle").value = "";
+        document.getElementById("locationAddress").value = "";
+        document.getElementById("locationInputs").style.display = "none";
       }
+
+      function escapeHtml(unsafe) {
+        if (typeof unsafe !== "string") {
+          return "";
+        }
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      document.getElementById('shareLocationBtn').onclick = shareLocation;
+      document.getElementById('refreshBtn').onclick = shareFlex;
     </script>
   </body>
 </html>
