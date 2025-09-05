@@ -66,6 +66,16 @@
             margin-bottom: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             min-height: 300px;
+            overflow: hidden;
+        }
+
+        #flex1 img, #flex1 video {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
         }
 
         #map {
@@ -227,6 +237,7 @@
             width: 60px;
             height: 60px;
         }
+
         @keyframes pulse {
             0% {
                 transform: scale(0.8);
@@ -249,6 +260,7 @@
             text-align: center;
             margin-bottom: 5px;
         }
+
         #leaflet-popup-content .popup-button {
             background-color: #2575fc;
             color: white;
@@ -260,14 +272,17 @@
             margin-top: 10px;
             transition: all 0.3s ease;
         }
+
         #leaflet-popup-content .popup-button:hover {
             background-color: #1e5fc7;
         }
+
         #leaflet-popup-content .popup-image-container {
             display: flex;
             justify-content: center;
             padding: 8px;
         }
+
         #leaflet-popup-content .popup-image {
             width: 48px;
             height: 48px;
@@ -285,17 +300,20 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             margin-top: 20px;
         }
+
         #dataList table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             font-size: 0.9rem;
         }
+
         #dataList th, #dataList td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
         }
+
         #dataList th {
             background-color: #2575fc;
             color: white;
@@ -304,39 +322,48 @@
             top: 0;
             z-index: 10;
         }
+
         #dataList tr {
             transition: background-color 0.2s ease;
         }
+
         #dataList tr:hover {
             background-color: rgba(37, 117, 252, 0.1);
         }
+
         #dataList td.actions {
             display: flex;
             gap: 5px;
             justify-content: flex-end;
         }
+
         #dataList .btn {
             padding: 6px 12px;
             font-size: 0.8rem;
             border-radius: 20px;
             transition: all 0.3s ease;
         }
+
         #dataList .btn-primary {
             background-color: #2575fc;
             border-color: #2575fc;
         }
+
         #dataList .btn-success {
             background-color: #28a745;
             border-color: #28a745;
         }
+
         #dataList .btn-danger {
             background-color: #ff4757;
             border-color: #ff4757;
         }
+
         #dataList .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
         }
+
         #dataList .no-data {
             text-align: center;
             padding: 20px;
@@ -387,7 +414,9 @@
                 Show Txt
             </button>
             <button class="btn btn-warning" onclick="sendText()">Send Text</button>
-            <button class="btn btn-dark" onclick="showVideo()">Show Vid</button>
+            <button class="btn btn-dark" onclick="showVideo(); toggleMessageDisplay('flex1')">
+                Show Vid
+            </button>
             <button class="btn btn-dark" onclick="sendVideo()">Send Vid</button>
             <button class="btn btn-info" onclick="getLocation()">Get Loc</button>
             <button class="btn btn-info" onclick="sendLocation()">Send Loc</button>
@@ -468,8 +497,15 @@
             });
 
         function toggleMessageDisplay(elementId) {
-            const element = document.getElementById(elementId);
-            element.style.display = element.style.display === "none" ? "block" : "none";
+            const elements = ["flex1", "showtext"];
+            elements.forEach((id) => {
+                const element = document.getElementById(id);
+                if (id === elementId) {
+                    element.style.display = element.style.display === "none" ? "block" : "none";
+                } else {
+                    element.style.display = "none";
+                }
+            });
         }
 
         function showLoading() {
@@ -486,6 +522,16 @@
             Swal.close();
         }
 
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== "string") return unsafe;
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function navigateTo(lat, lng) {
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
         }
@@ -497,7 +543,7 @@
                         <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
                         <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
                     </div>
-                    <div style="width: 200px; text-align: center;">
+                    <div style="width: 80px; text-align: center;">
                         <p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(displayName)}</p>
                     </div>
                 </div>
@@ -830,8 +876,36 @@
         }
 
         function showImage() {
-            const src = document.getElementById("textBox2").value;
-            document.getElementById("flex1").innerHTML = `<img src="${src}" alt="Shared Image">`;
+            const src = document.getElementById("textBox2").value.trim();
+            if (!src) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี URL รูปภาพ",
+                    text: "กรุณากรอก URL รูปภาพในช่องที่สอง",
+                });
+                return;
+            }
+            const flexContainer = document.getElementById("flex1");
+            flexContainer.innerHTML = `<img src="${src}" alt="Shared Image" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Image+Not+Found';">`;
+            flexContainer.style.display = "block";
+        }
+
+        function sendImage() {
+            const src = document.getElementById("textBox2").value.trim();
+            if (!src) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี URL รูปภาพ",
+                    text: "กรุณากรอก URL รูปภาพในช่องที่สอง",
+                });
+                return;
+            }
+            const messageObj = {
+                type: "image",
+                originalContentUrl: src,
+                previewImageUrl: src
+            };
+            sendMessage(messageObj);
         }
 
         function showFlex() {
@@ -842,22 +916,116 @@
                 const flexObject = JSON.parse(flexJson);
                 const flexMessage = {
                     type: "flex",
-                    altText: "Flex Message",
+                    altText: document.getElementById("textBox1").value || "Flex Message",
                     contents: flexObject,
                 };
                 if (typeof flex2html === "function") {
                     flex2html("flex1", flexMessage);
+                    flexContainer.style.display = "block";
                 } else {
                     flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
                 }
             } catch (error) {
                 flexContainer.innerHTML = '<p class="text-danger">Invalid Flex JSON. Please check your input.</p>';
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Flex Message: ${error.message}`,
+                });
+            }
+        }
+
+        function sendFlex() {
+            const flexJson = document.getElementById("textBox2").value.trim();
+            if (!flexJson) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี JSON",
+                    text: "กรุณากรอก JSON สำหรับ Flex Message ในช่องที่สอง",
+                });
+                return;
+            }
+            try {
+                const flexObject = JSON.parse(flexJson);
+                if (!isValidFlexMessage(flexObject)) {
+                    throw new Error("โครงสร้าง Flex Message ไม่ถูกต้อง");
+                }
+                const messageObj = {
+                    type: "flex",
+                    altText: document.getElementById("textBox1").value || "Flex Message",
+                    contents: flexObject
+                };
+                sendMessage(messageObj);
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Flex Message: ${error.message}`,
+                });
             }
         }
 
         function showText() {
             const showTextElement = document.getElementById("showtext");
             showTextElement.textContent = document.getElementById("textBox2").value;
+            showTextElement.style.display = "block";
+        }
+
+        function sendText() {
+            const text = document.getElementById("textBox2").value.trim();
+            if (!text) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มีข้อความ",
+                    text: "กรุณากรอกข้อความในช่องที่สอง",
+                });
+                return;
+            }
+            const messageObj = {
+                type: "text",
+                text: text
+            };
+            sendMessage(messageObj);
+        }
+
+        function showVideo() {
+            const videoUrl = document.getElementById("textBox1").value.trim();
+            const previewImageUrl = document.getElementById("textBox2").value.trim();
+            if (!videoUrl) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี URL วิดีโอ",
+                    text: "กรุณากรอก URL วิดีโอในช่องที่หนึ่ง",
+                });
+                return;
+            }
+            const videoPreview = document.getElementById("flex1");
+            videoPreview.innerHTML = `
+                <video width="100%" controls poster="${previewImageUrl || ''}" onerror="this.onerror=null; this.parentElement.innerHTML='<p class=\\'text-danger\\'>ไม่สามารถโหลดวิดีโอได้: URL ไม่ถูกต้องหรือวิดีโอไม่พร้อมใช้งาน</p>';">
+                    <source src="${videoUrl}" type="video/mp4">
+                    เบราว์เซอร์ของคุณไม่รองรับแท็กวิดีโอ
+                </video>
+            `;
+            videoPreview.style.display = "block";
+        }
+
+        function sendVideo() {
+            const videoUrl = document.getElementById("textBox1").value.trim();
+            const previewImageUrl = document.getElementById("textBox2").value.trim();
+            if (!videoUrl) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี URL วิดีโอ",
+                    text: "กรุณากรอก URL วิดีโอในช่องที่หนึ่ง",
+                });
+                return;
+            }
+            const messageObj = {
+                type: "video",
+                originalContentUrl: videoUrl,
+                previewImageUrl: previewImageUrl || videoUrl
+            };
+            sendMessage(messageObj);
         }
 
         function showSticker() {
@@ -866,7 +1034,27 @@
             const packageId = document.getElementById("textBox1").value || "11537";
             const stickerId = document.getElementById("textBox2").value || "52002734";
             const stickerUrl = `https://stickershop.line-scdn.net/stickershop/v1/sticker/${stickerId}/android/sticker.png`;
-            flexContainer.innerHTML = `<img src="${stickerUrl}" alt="Sticker (packageId: ${packageId}, stickerId: ${stickerId})" style="max-width: 200px;" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Sticker+Not+Found';">`;
+            flexContainer.innerHTML = `<img src="${stickerUrl}" alt="Sticker (packageId: ${packageId}, stickerId: ${stickerId})" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=Sticker+Not+Found';">`;
+            flexContainer.style.display = "block";
+        }
+
+        function sendSticker() {
+            const packageId = document.getElementById("textBox1").value || "11537";
+            const stickerId = document.getElementById("textBox2").value || "52002734";
+            if (!isValidStickerMessage(packageId, stickerId)) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ข้อมูลสติกเกอร์ไม่ถูกต้อง",
+                    text: "กรุณากรอก packageId และ stickerId ที่เป็นตัวเลข",
+                });
+                return;
+            }
+            const messageObj = {
+                type: "sticker",
+                packageId: packageId,
+                stickerId: stickerId
+            };
+            sendMessage(messageObj);
         }
 
         function showTemplate() {
@@ -880,9 +1068,49 @@
             try {
                 const templateObject = JSON.parse(templateJson);
                 flexContainer.innerHTML = `<pre class="json-fallback">${escapeHtml(JSON.stringify(templateObject, null, 2))}</pre>`;
+                flexContainer.style.display = "block";
             } catch (error) {
                 flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Template: ${error.message}`,
+                });
             }
+        }
+
+        function sendTemplate() {
+            const templateJson = document.getElementById("textBox2").value.trim();
+            if (!templateJson) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่มี JSON",
+                    text: "กรุณากรอก JSON สำหรับ Template Message ในช่องที่สอง",
+                });
+                return;
+            }
+            try {
+                const templateObject = JSON.parse(templateJson);
+                if (!isValidTemplateMessage(templateObject)) {
+                    throw new Error("โครงสร้าง Template Message ไม่ถูกต้อง");
+                }
+                const messageObj = templateObject;
+                sendMessage(messageObj);
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Template Message: ${error.message}`,
+                });
+            }
+        }
+
+        function isValidTemplateMessage(obj) {
+            return (
+                obj &&
+                (obj.type === "template") &&
+                (obj.template && ["buttons", "confirm", "carousel", "image_carousel"].includes(obj.template.type))
+            );
         }
 
         function formatJson() {
@@ -891,8 +1119,8 @@
             if (!jsonString) {
                 Swal.fire({
                     icon: "error",
-                    title: "No JSON to format",
-                    text: "Please provide a JSON string in the second input.",
+                    title: "ไม่มี JSON",
+                    text: "กรุณากรอก JSON ในช่องที่สอง",
                 });
                 return;
             }
@@ -903,18 +1131,96 @@
                 textBox2.value = JSON.stringify(jsonObj, null, jsonIndentLevel);
                 Swal.fire({
                     icon: "success",
-                    title: "JSON Formatted",
-                    text: `Formatted with ${indentLabel} indentation.`,
+                    title: "จัดรูปแบบ JSON สำเร็จ",
+                    text: `จัดรูปแบบด้วยการเยื้อง ${indentLabel}`,
                     timer: 1500,
                     showConfirmButton: false,
                 });
             } catch (error) {
                 Swal.fire({
                     icon: "error",
-                    title: "Invalid JSON",
-                    text: `Please check your JSON input: ${error.message}`,
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON: ${error.message}`,
                 });
             }
+        }
+
+        function clearText() {
+            document.getElementById("textBox1").value = "";
+            document.getElementById("textBox2").value = "";
+            document.getElementById("locationTitle").value = "";
+            document.getElementById("locationAddress").value = "";
+            document.getElementById("flex1").style.display = "none";
+            document.getElementById("showtext").style.display = "none";
+            document.getElementById("locationInputs").style.display = "none";
+            window.currentItemId = null;
+            Swal.fire({
+                icon: "success",
+                title: "ล้างข้อมูลสำเร็จ",
+                timer: 1000,
+                showConfirmButton: false,
+            });
+        }
+
+        function scanQrCode() {
+            const qrReader = document.getElementById("qr-reader");
+            qrReader.style.display = "block";
+            const html5QrCode = new Html5Qrcode("qr-reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                },
+                (decodedText) => {
+                    document.getElementById("textBox2").value = decodedText;
+                    Swal.fire({
+                        icon: "success",
+                        title: "สแกน QR Code สำเร็จ",
+                        text: `ข้อมูล: ${decodedText}`,
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                    html5QrCode.stop().then(() => {
+                        qrReader.style.display = "none";
+                    });
+                },
+                (error) => {
+                    console.warn(`QR Code scan error: ${error}`);
+                }
+            ).catch((err) => {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่สามารถสแกน QR Code ได้",
+                    text: `กรุณาตรวจสอบกล้องหรือลองใหม่: ${err.message}`,
+                });
+                qrReader.style.display = "none";
+            });
+        }
+
+        function sendLocation() {
+            const latitude = document.getElementById("textBox1").value.trim();
+            const longitude = document.getElementById("textBox2").value.trim();
+            const title = document.getElementById("locationTitle").value.trim() || "Location";
+            const address = document.getElementById("locationAddress").value.trim() || "View on map";
+
+            if (!latitude || !longitude || isNaN(parseFloat(latitude)) || isNaN(parseFloat(longitude))) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ข้อมูลตำแหน่งไม่ถูกต้อง",
+                    text: "กรุณากรอกพิกัด latitude และ longitude ที่ถูกต้อง",
+                });
+                return;
+            }
+
+            const messageObj = {
+                type: "location",
+                title: title,
+                address: address,
+                latitude: parseFloat(latitude),
+                longitude: parseFloat(longitude)
+            };
+            sendMessage(messageObj);
         }
 
         function isValidStickerMessage(packageId, stickerId) {
@@ -969,13 +1275,13 @@
                 text1: flexJson,
                 userId: profile.userId,
                 displayName: profile.displayName,
-                type: "flex"
+                type: "flex",
+                action: window.currentItemId ? "update" : "create"
             };
             showLoading();
             try {
-                const method = window.currentItemId ? "PUT" : "POST";
                 const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-                    method: method,
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
@@ -1000,7 +1306,7 @@
                         showConfirmButton: false,
                     });
                     window.currentItemId = null;
-                    clearInputs();
+                    clearText();
                     fetchDataList();
                 } else {
                     throw new Error(result.error || "Unknown error occurred");
@@ -1042,6 +1348,9 @@
             let templateObj;
             try {
                 templateObj = JSON.parse(templateJson);
+                if (!isValidTemplateMessage(templateObj)) {
+                    throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง");
+                }
             } catch (error) {
                 Swal.fire({
                     icon: "error",
@@ -1056,13 +1365,13 @@
                 text1: templateJson,
                 userId: profile.userId,
                 displayName: profile.displayName,
-                type: "template"
+                type: "template",
+                action: window.currentItemId ? "update" : "create"
             };
             showLoading();
             try {
-                const method = window.currentItemId ? "PUT" : "POST";
                 const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-                    method: method,
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
@@ -1087,7 +1396,7 @@
                         showConfirmButton: false,
                     });
                     window.currentItemId = null;
-                    clearInputs();
+                    clearText();
                     fetchDataList();
                 } else {
                     throw new Error(result.error || "Unknown error occurred");
@@ -1422,6 +1731,9 @@
                         messageObj = obj;
                     }
                 } else if (item.type === "template") {
+                    if (!isValidTemplateMessage(obj)) {
+                        throw new Error("โครงสร้าง Template Message ไม่ถูกต้อง");
+                    }
                     messageObj = obj;
                 } else {
                     throw new Error("ประเภทข้อความไม่รู้จัก");
@@ -1443,11 +1755,16 @@
             }
             console.log("Deleting item with id:", id);
             try {
-                const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
-                    method: "DELETE",
+                const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+                    method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
+                    body: JSON.stringify({
+                        id: id,
+                        userId: profile.userId,
+                        action: "delete"
+                    }),
                 });
                 if (!response.ok) {
                     const text = await response.text();
@@ -1544,353 +1861,6 @@
                 .finally(() => {
                     hideLoading();
                 });
-        }
-
-        function sendTemplate() {
-            const templateJson = document.getElementById("textBox2").value.trim();
-            if (!templateJson) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Missing Message JSON",
-                    text: "Please provide a valid JSON in the second input.",
-                });
-                return;
-            }
-            try {
-                const messageObj = JSON.parse(templateJson);
-                sendMessage(messageObj);
-            } catch (error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid Message JSON",
-                    text: `Please check your JSON input: ${error.message}`,
-                });
-            }
-        }
-
-        function sendSticker() {
-            const packageId = document.getElementById("textBox1").value || "11537";
-            const stickerId = document.getElementById("textBox2").value || "52002734";
-            if (!isValidStickerMessage(packageId, stickerId)) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid Sticker IDs",
-                    text: "Please ensure packageId and stickerId are valid numbers.",
-                });
-                return;
-            }
-            const messageObj = {
-                type: "sticker",
-                packageId: packageId,
-                stickerId: stickerId
-            };
-            sendMessage(messageObj);
-        }
-
-        function clearText() {
-            Swal.fire({
-                title: "คุณแน่ใจหรือไม่?",
-                text: "คุณต้องการล้างข้อความทั้งหมดใช่หรือไม่?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "ใช่, ล้างข้อความ",
-                cancelButtonText: "ยกเลิก",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById("textBox1").value = "";
-                    document.getElementById("textBox2").value = "";
-                    document.getElementById("locationTitle").value = "";
-                    document.getElementById("locationAddress").value = "";
-                    document.getElementById("flex1").innerHTML = "";
-                    document.getElementById("showtext").textContent = "";
-                    document.getElementById("flex1").style.display = "none";
-                    document.getElementById("showtext").style.display = "none";
-                    document.getElementById("locationInputs").style.display = "none";
-                    window.currentItemId = null;
-                    if (map) {
-                        map.remove();
-                        map = null;
-                    }
-                    markers.forEach(m => map && map.removeLayer(m));
-                    markers = [];
-                    Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
-                }
-            });
-        }
-
-        function sendImage() {
-            const originalContentUrl = document.getElementById("textBox1").value;
-            const previewImageUrl = document.getElementById("textBox2").value;
-            sendMessage({
-                type: "image",
-                originalContentUrl,
-                previewImageUrl,
-            });
-        }
-
-        function sendFlex() {
-            const altText = document.getElementById("textBox1").value;
-            let contents;
-            try {
-                contents = JSON.parse(document.getElementById("textBox2").value);
-            } catch (e) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid Flex Message format",
-                    text: "Please check your JSON input.",
-                });
-                return;
-            }
-            if (!isValidFlexMessage(contents)) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid Flex Message structure",
-                    text: "Please ensure your JSON follows the correct Flex Message format.",
-                });
-                return;
-            }
-            const messageObj = {
-                type: "flex",
-                altText: altText || "Flex Message",
-                contents: contents,
-            };
-            sendMessage(messageObj);
-        }
-
-        function sendVideo() {
-            const originalContentUrl = document.getElementById("textBox1").value;
-            const previewImageUrl = document.getElementById("textBox2").value;
-            if (!originalContentUrl) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Missing video URL",
-                    text: "Please enter a video URL in the first text box.",
-                });
-                return;
-            }
-            if (!previewImageUrl) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Missing preview image URL",
-                    text: "Please enter a preview image URL in the second text box.",
-                });
-                return;
-            }
-            sendMessage({
-                type: "video",
-                originalContentUrl: originalContentUrl,
-                previewImageUrl: previewImageUrl,
-            });
-        }
-
-        function showVideo() {
-            const videoUrl = document.getElementById("textBox1").value;
-            const previewImageUrl = document.getElementById("textBox2").value;
-            if (!videoUrl) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Missing video URL",
-                    text: "Please enter a video URL in the first text box.",
-                });
-                return;
-            }
-            const videoPreview = document.getElementById("flex1");
-            videoPreview.innerHTML = `
-                <video width="100%" controls poster="${previewImageUrl}">
-                    <source src="${videoUrl}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            `;
-        }
-
-        function sendLocation() {
-            const latitude = document.getElementById("textBox1").value.trim();
-            const longitude = document.getElementById("textBox2").value.trim();
-            const title = document.getElementById("locationTitle").value.trim() || "My Location";
-            const address = document.getElementById("locationAddress").value.trim() || "View on map";
-            if (!latitude || !longitude) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Missing location data",
-                    text: "Please get your location first or enter latitude in textBox1 and longitude in textBox2.",
-                });
-                return;
-            }
-            const lat = parseFloat(latitude);
-            const lon = parseFloat(longitude);
-            if (isNaN(lat) || isNaN(lon)) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Invalid location data",
-                    text: "Latitude and longitude must be valid numbers.",
-                });
-                return;
-            }
-            sendMessage({
-                type: "location",
-                title: title,
-                address: address,
-                latitude: lat,
-                longitude: lon,
-            });
-        }
-
-        async function scanQrCode() {
-            const qrReader = document.getElementById("qr-reader");
-            if (liff.isInClient()) {
-                try {
-                    const result = await liff.scanCodeV2();
-                    document.getElementById("textBox2").value = result.value;
-                    showScanResult(result.value);
-                } catch (error) {
-                    showScanError(error);
-                }
-            } else {
-                qrReader.innerHTML = `
-                    <div>
-                        <p class="text-white" style="font-weight:bold; font-size:1rem;">เลือกวิธีสแกน QR Code:</p>
-                        <button id="cameraBtn" class="btn btn-primary">ใช้กล้อง</button>
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                        <button id="fileBtn" class="btn btn-secondary">อัปโหลดรูปภาพ</button>
-                    </div>
-                    <div id="qrScannerContainer"></div>
-                `;
-                document.getElementById("cameraBtn").onclick = startCameraScanner;
-                document.getElementById("fileBtn").onclick = () => document.getElementById("fileInput").click();
-                document.getElementById("fileInput").onchange = handleFileUpload;
-                qrReader.style.display = "block";
-            }
-        }
-
-        let scanner = null;
-        function startCameraScanner() {
-            const qrScannerContainer = document.getElementById("qrScannerContainer");
-            qrScannerContainer.innerHTML = "";
-            scanner = new Html5Qrcode("qrScannerContainer");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            scanner
-                .start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
-                .catch((error) => {
-                    showCameraAccessInstructions();
-                });
-            const closeButton = document.createElement("button");
-            closeButton.textContent = "ปิดสแกนเนอร์";
-            closeButton.className = "btn btn-danger mt-2";
-            closeButton.onclick = stopScanner;
-            qrScannerContainer.appendChild(closeButton);
-        }
-
-        function stopScanner() {
-            if (scanner) {
-                scanner
-                    .stop()
-                    .then(() => {
-                        scanner.clear();
-                        document.getElementById("qrScannerContainer").innerHTML = "";
-                    })
-                    .catch((error) => {});
-            }
-        }
-
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(img, 0, 0, img.width, img.height);
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        if (code) {
-                            onScanSuccess(code.data);
-                        } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "ไม่พบ QR Code",
-                                text: "กรุณาอัปโหลดรูปภาพที่มี QR Code ที่ชัดเจน",
-                            });
-                        }
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function onScanSuccess(decodedText) {
-            document.getElementById("textBox2").value = decodedText;
-            showScanResult(decodedText);
-            document.getElementById("qr-reader").style.display = "none";
-        }
-
-        function onScanError(error) {}
-
-        function showCameraAccessInstructions() {
-            Swal.fire({
-                icon: "info",
-                title: "ไม่สามารถเข้าถึงกล้องได้",
-                html: `
-                    <p>กรุณาทำตามขั้นตอนต่อไปนี้เพื่ออนุญาตการเข้าถึงกล้อง:</p>
-                    <ol>
-                        <li>คลิกที่ไอคอนกุญแจหรือ 'i' ที่ด้านซ้ายของ URL ในเบราว์เซอร์</li>
-                        <li>เลือก 'การตั้งค่าไซต์' หรือ 'Site settings'</li>
-                        <li>ค้นหาการตั้งค่ากล้องและเปลี่ยนเป็น 'อนุญาต' หรือ 'Allow'</li>
-                        <li>รีเฟรชหน้าเว็บและลองสแกนอีกครั้ง</li>
-                    </ol>
-                    <p>หากยังไม่สามารถใช้กล้องได้ กรุณาลองอัปโหลดรูปภาพ QR Code แทน</p>
-                `,
-            });
-        }
-
-        function showScanResult(value) {
-            Swal.fire({
-                icon: "success",
-                title: "สแกน QR Code สำเร็จ!",
-                text: `ค่าที่สแกนได้: ${value}`,
-                timer: 1500,
-                showConfirmButton: false,
-            });
-        }
-
-        function showScanError(error) {
-            let errorMessage = "เกิดข้อผิดพลาดในการสแกน QR code";
-            if (error.name === "NotAllowedError") {
-                errorMessage = "ไม่ได้รับอนุญาตให้เข้าถึงกล้อง กรุณาอนุญาตการเข้าถึงกล้องเพื่อสแกน QR code";
-            } else if (error.name === "NotFoundError") {
-                errorMessage = "ไม่พบกล้องบนอุปกรณ์นี้";
-            }
-            Swal.fire({
-                icon: "error",
-                title: "เกิดข้อผิดพลาด",
-                text: errorMessage,
-            });
-        }
-
-        function clearInputs() {
-            const textBox1 = document.getElementById("textBox1");
-            const textBox2 = document.getElementById("textBox2");
-            if (textBox1) textBox1.value = "";
-            if (textBox2) textBox2.value = "";
-            window.currentItemId = null;
-        }
-
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== "string") {
-                return "";
-            }
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
