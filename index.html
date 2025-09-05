@@ -222,14 +222,14 @@
           class="form-control"
           type="text"
           id="textBox1"
-          placeholder="ข้อมูลที่ 1 (เช่น packageId สำหรับ Sticker, หัวข้อสำหรับ Template, latitude สำหรับ Location)"
+          placeholder="latitude สำหรับ Location หรือ packageId สำหรับ Sticker"
         />
       </div>
       <div class="mb-3">
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template, longitude หรือ JSON สำหรับ Location)"
+          placeholder="longitude หรือ JSON (สำหรับ Template/Location)"
         ></textarea>
       </div>
       <div id="locationInputs">
@@ -238,7 +238,7 @@
             class="form-control"
             type="text"
             id="locationTitle"
-            placeholder="ชื่อสถานที่ (เช่น ร้านอาหาร ABC)"
+            placeholder="ชื่อสถานที่สำหรับ Location (เช่น ร้านกาแฟ ABC)"
           />
         </div>
         <div class="mb-3">
@@ -246,7 +246,7 @@
             class="form-control"
             type="text"
             id="locationAddress"
-            placeholder="ที่อยู่ (เช่น 123 ถนนสุขุมวิท, กรุงเทพฯ)"
+            placeholder="ที่อยู่สำหรับ Location (เช่น 123 ถนนสีลม, กรุงเทพฯ)"
           />
         </div>
       </div>
@@ -536,6 +536,14 @@
         }
         try {
           const messageObj = JSON.parse(templateJson);
+          if (messageObj.type !== "template" && messageObj.type !== "location") {
+            Swal.fire({
+              icon: "error",
+              title: "Invalid Message Type",
+              text: "JSON must have type 'template' or 'location'.",
+            });
+            return;
+          }
           sendMessage(messageObj);
         } catch (error) {
           console.error("Error parsing Message JSON:", error);
@@ -1020,64 +1028,68 @@
         const templateJson = document.getElementById("textBox2").value.trim();
         const title = document.getElementById("locationTitle").value.trim() || document.getElementById("textBox1").value.trim();
         const address = document.getElementById("locationAddress").value.trim();
+        const latitude = document.getElementById("textBox1").value.trim();
+        const longitude = document.getElementById("textBox2").value.trim();
+
         if (!title) {
           Swal.fire({
             icon: "error",
-            title: "กรุณากรอกหัวข้อ",
-            text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
+            title: "กรุณากรอกชื่อสถานที่",
+            text: "กรุณากรอกชื่อสถานที่ในช่องชื่อสถานที่หรือช่องแรก",
           });
           return;
         }
+
         if (!templateJson) {
-          const latitude = document.getElementById("textBox1").value.trim();
-          const longitude = document.getElementById("textBox2").value.trim();
-          if (latitude && longitude) {
-            const lat = parseFloat(latitude);
-            const lon = parseFloat(longitude);
-            if (isNaN(lat) || isNaN(lon)) {
-              Swal.fire({
-                icon: "error",
-                title: "Invalid location data",
-                text: "Latitude and longitude must be valid numbers.",
-              });
-              return;
-            }
-            const locationObj = {
-              type: "location",
-              title: title,
-              address: address || "View on map",
-              latitude: lat,
-              longitude: lon
-            };
-            const data = {
-              title: title,
-              text1: JSON.stringify(locationObj),
-              userId: profile.userId,
-              displayName: profile.displayName,
-              type: "location"
-            };
-            saveToSupabaseWithData(data, retryCount, maxRetries);
-            return;
-          } else {
+          // สร้าง location object จาก textBox1 (latitude) และ textBox2 (longitude)
+          if (!latitude || !longitude) {
             Swal.fire({
               icon: "error",
-              title: "กรุณากรอก JSON หรือพิกัด",
-              text: "JSON หรือ latitude/longitude ไม่สามารถเป็นค่าว่างได้",
+              title: "กรุณากรอกพิกัด",
+              text: "กรุณากรอก latitude ในช่องแรกและ longitude ในช่องที่สอง",
             });
             return;
           }
+          const lat = parseFloat(latitude);
+          const lon = parseFloat(longitude);
+          if (isNaN(lat) || isNaN(lon)) {
+            Swal.fire({
+              icon: "error",
+              title: "พิกัดไม่ถูกต้อง",
+              text: "Latitude และ longitude ต้องเป็นตัวเลขที่ถูกต้อง",
+            });
+            return;
+          }
+          const locationObj = {
+            type: "location",
+            title: title,
+            address: address || "View on map",
+            latitude: lat,
+            longitude: lon
+          };
+          const data = {
+            title: title,
+            text1: JSON.stringify(locationObj),
+            userId: profile.userId,
+            displayName: profile.displayName,
+            type: "location"
+          };
+          saveToSupabaseWithData(data, retryCount, maxRetries);
+          return;
         }
+
+        // ตรวจสอบ JSON ใน textBox2
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
           if (templateObj.type !== "template" && templateObj.type !== "location") {
-            throw new Error("JSON must have type: 'template' or 'location'");
+            throw new Error("JSON ต้องมี type เป็น 'template' หรือ 'location' เท่านั้น");
           }
           if (templateObj.type === "template" && (!templateObj.template || !["buttons", "confirm", "carousel", "image_carousel"].includes(templateObj.template.type))) {
-            throw new Error("Invalid template type");
+            throw new Error("Template type ไม่ถูกต้อง ต้องเป็น buttons, confirm, carousel, หรือ image_carousel");
           }
           if (templateObj.type === "location" && (!templateObj.latitude || !templateObj.longitude)) {
-            throw new Error("Invalid location message format");
+            throw new Error("Location JSON ต้องมี latitude และ longitude");
           }
         } catch (error) {
           Swal.fire({
