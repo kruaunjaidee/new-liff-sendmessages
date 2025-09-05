@@ -329,6 +329,7 @@
             padding: 20px;
             color: #666;
             font-style: italic;
+            font-size: 1rem;
         }
     </style>
 </head>
@@ -1424,7 +1425,7 @@
                     throw new Error('ไม่สามารถดึงข้อมูลจาก Supabase');
                 }
                 const data = await response.json();
-                window.listData = data;
+                window.listData = Array.isArray(data) ? data : [];
                 renderDataList();
             } catch (error) {
                 Swal.fire({
@@ -1457,17 +1458,15 @@
             `;
             const tbody = table.querySelector("tbody");
             window.listData.forEach((item, index) => {
-                if (!item || !item.messageType || !item.contents) {
-                    return;
-                }
+                if (!item) return;
                 const row = document.createElement("tr");
+                const messageType = item.messageType || 'unknown';
                 let displayText = 'Unknown Message';
-                let messageType = item.messageType;
-                if (item.messageType === 'flex') {
+                if (messageType === 'flex') {
                     displayText = item.altText || 'Flex Message';
-                } else if (item.messageType === 'location' && item.contents && typeof item.contents === 'object') {
+                } else if (messageType === 'location' && item.contents && typeof item.contents === 'object') {
                     displayText = item.contents.title || 'Location Message';
-                } else if (item.messageType === 'template' && item.contents && typeof item.contents === 'object') {
+                } else if (messageType === 'template' && item.contents && typeof item.contents === 'object') {
                     displayText = item.contents.altText || 'Template Message';
                 }
                 row.innerHTML = `
