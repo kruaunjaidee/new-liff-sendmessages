@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="th">
   <head>
@@ -58,7 +57,7 @@
         padding: 15px;
         margin-bottom: 20px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        min-height: 300px; /* Ensure enough height for map */
+        min-height: 300px;
       }
       #map {
         width: 100%;
@@ -193,6 +192,10 @@
         border-radius: 5px;
         overflow-x: auto;
       }
+      #locationInputs {
+        display: none;
+        margin-bottom: 15px;
+      }
       @media (max-width: 576px) {
         .container {
           padding: 20px;
@@ -226,8 +229,26 @@
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template, longitude สำหรับ Location)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template, longitude หรือ JSON สำหรับ Location)"
         ></textarea>
+      </div>
+      <div id="locationInputs">
+        <div class="mb-3">
+          <input
+            class="form-control"
+            type="text"
+            id="locationTitle"
+            placeholder="ชื่อสถานที่ (เช่น ร้านอาหาร ABC)"
+          />
+        </div>
+        <div class="mb-3">
+          <input
+            class="form-control"
+            type="text"
+            id="locationAddress"
+            placeholder="ที่อยู่ (เช่น 123 ถนนสุขุมวิท, กรุงเทพฯ)"
+          />
+        </div>
       </div>
       <div
         id="flex1"
@@ -275,9 +296,7 @@
         >
           Show Location
         </button>
-        <button class="btn btn-danger" onclick="scanQrCode()">
-          Scan QR
-        </button>
+        <button class="btn btn-danger" onclick="scanQrCode()">Scan QR</button>
         <button
           class="btn btn-template"
           onclick="showTemplate(); toggleMessageDisplay('flex1')"
@@ -308,7 +327,7 @@
           บันทึก Flex Message
         </button>
         <button class="btn btn-success w-100 mt-2" onclick="saveTemplateToSupabase()">
-          บันทึก Template Message
+          บันทึก Template/Location Message
         </button>
       </div>
       <div style="margin-top: 10px;" id="dataList" class="mt-3 bg-white p-2 rounded"></div>
@@ -390,27 +409,50 @@
       function showLocation() {
         const flexContainer = document.getElementById("flex1");
         flexContainer.innerHTML = '<div id="map"></div>';
+        const textBox1 = document.getElementById("textBox1").value.trim();
+        const textBox2 = document.getElementById("textBox2").value.trim();
+        const titleInput = document.getElementById("locationTitle").value.trim();
+        const addressInput = document.getElementById("locationAddress").value.trim();
+        
+        let latitude, longitude, title = titleInput || "Location", address = addressInput || "View on map";
+
         try {
-          const json = document.getElementById("textBox2").value.trim();
-          let locationObj;
-          if (json) {
-            locationObj = JSON.parse(json);
+          if (textBox2) {
+            try {
+              const parsed = JSON.parse(textBox2);
+              if (parsed.type === "location" && parsed.latitude && parsed.longitude) {
+                latitude = parseFloat(parsed.latitude);
+                longitude = parseFloat(parsed.longitude);
+                title = parsed.title || title;
+                address = parsed.address || address;
+              } else {
+                throw new Error("Invalid location JSON format");
+              }
+            } catch {
+              latitude = parseFloat(textBox1);
+              longitude = parseFloat(textBox2);
+              if (isNaN(latitude) || isNaN(longitude)) {
+                throw new Error("Invalid latitude or longitude values");
+              }
+            }
           } else {
-            throw new Error("No location data provided");
+            throw new Error("Please provide latitude in textBox1 and longitude in textBox2 or valid location JSON in textBox2");
           }
-          if (locationObj.type !== "location" || !locationObj.latitude || !locationObj.longitude) {
-            throw new Error("Invalid location message format");
+
+          if (isNaN(latitude) || isNaN(longitude)) {
+            throw new Error("Latitude and longitude must be valid numbers");
           }
-          const map = L.map('map').setView([locationObj.latitude, locationObj.longitude], 13);
+
+          const map = L.map('map').setView([latitude, longitude], 13);
           L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           }).addTo(map);
-          L.marker([locationObj.latitude, locationObj.longitude]).addTo(map)
-            .bindPopup(`${locationObj.title || "Location"}<br>${locationObj.address || "No address provided"}`)
+          L.marker([latitude, longitude]).addTo(map)
+            .bindPopup(`${title}<br>${address}`)
             .openPopup();
         } catch (error) {
           console.error("Error showing location:", error);
-          flexContainer.innerHTML = `<p class="text-danger">Invalid location JSON: ${error.message}</p>`;
+          flexContainer.innerHTML = `<p class="text-danger">Invalid location data: ${error.message}</p>`;
         }
       }
 
@@ -538,10 +580,13 @@
           if (result.isConfirmed) {
             document.getElementById("textBox1").value = "";
             document.getElementById("textBox2").value = "";
+            document.getElementById("locationTitle").value = "";
+            document.getElementById("locationAddress").value = "";
             document.getElementById("flex1").innerHTML = "";
             document.getElementById("showtext").textContent = "";
             document.getElementById("flex1").style.display = "none";
             document.getElementById("showtext").style.display = "none";
+            document.getElementById("locationInputs").style.display = "none";
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
@@ -620,6 +665,7 @@
         const longitude = position.coords.longitude;
         document.getElementById("textBox1").value = latitude;
         document.getElementById("textBox2").value = longitude;
+        document.getElementById("locationInputs").style.display = "block";
         Swal.fire({
           icon: "success",
           title: "Location retrieved",
@@ -699,22 +745,34 @@
       }
 
       function sendLocation() {
-        const latitude = document.getElementById("textBox1").value;
-        const longitude = document.getElementById("textBox2").value;
+        const latitude = document.getElementById("textBox1").value.trim();
+        const longitude = document.getElementById("textBox2").value.trim();
+        const title = document.getElementById("locationTitle").value.trim() || "My Location";
+        const address = document.getElementById("locationAddress").value.trim() || "View on map";
         if (!latitude || !longitude) {
           Swal.fire({
             icon: "error",
             title: "Missing location data",
-            text: "Please get your location first or enter latitude and longitude manually.",
+            text: "Please get your location first or enter latitude in textBox1 and longitude in textBox2.",
+          });
+          return;
+        }
+        const lat = parseFloat(latitude);
+        const lon = parseFloat(longitude);
+        if (isNaN(lat) || isNaN(lon)) {
+          Swal.fire({
+            icon: "error",
+            title: "Invalid location data",
+            text: "Latitude and longitude must be valid numbers.",
           });
           return;
         }
         sendMessage({
           type: "location",
-          title: "My Location",
-          address: "View on map",
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
+          title: title,
+          address: address,
+          latitude: lat,
+          longitude: lon,
         });
       }
 
@@ -960,7 +1018,8 @@
           return;
         }
         const templateJson = document.getElementById("textBox2").value.trim();
-        const title = document.getElementById("textBox1").value.trim();
+        const title = document.getElementById("locationTitle").value.trim() || document.getElementById("textBox1").value.trim();
+        const address = document.getElementById("locationAddress").value.trim();
         if (!title) {
           Swal.fire({
             icon: "error",
@@ -970,12 +1029,43 @@
           return;
         }
         if (!templateJson) {
-          Swal.fire({
-            icon: "error",
-            title: "กรุณากรอก JSON",
-            text: "JSON ไม่สามารถเป็นค่าว่างได้",
-          });
-          return;
+          const latitude = document.getElementById("textBox1").value.trim();
+          const longitude = document.getElementById("textBox2").value.trim();
+          if (latitude && longitude) {
+            const lat = parseFloat(latitude);
+            const lon = parseFloat(longitude);
+            if (isNaN(lat) || isNaN(lon)) {
+              Swal.fire({
+                icon: "error",
+                title: "Invalid location data",
+                text: "Latitude and longitude must be valid numbers.",
+              });
+              return;
+            }
+            const locationObj = {
+              type: "location",
+              title: title,
+              address: address || "View on map",
+              latitude: lat,
+              longitude: lon
+            };
+            const data = {
+              title: title,
+              text1: JSON.stringify(locationObj),
+              userId: profile.userId,
+              displayName: profile.displayName,
+              type: "location"
+            };
+            saveToSupabaseWithData(data, retryCount, maxRetries);
+            return;
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "กรุณากรอก JSON หรือพิกัด",
+              text: "JSON หรือ latitude/longitude ไม่สามารถเป็นค่าว่างได้",
+            });
+            return;
+          }
         }
         let templateObj;
         try {
@@ -1004,6 +1094,10 @@
           displayName: profile.displayName,
           type: templateObj.type
         };
+        saveToSupabaseWithData(data, retryCount, maxRetries);
+      }
+
+      async function saveToSupabaseWithData(data, retryCount, maxRetries) {
         Swal.fire({
           title: "กำลังบันทึกข้อมูล...",
           allowOutsideClick: false,
@@ -1046,7 +1140,7 @@
           console.error("Error saving data:", error);
           if (retryCount < maxRetries) {
             console.log(`Retrying saveTemplateToSupabase (${retryCount + 1}/${maxRetries})...`);
-            setTimeout(() => saveTemplateToSupabase(retryCount + 1, maxRetries), 1000);
+            setTimeout(() => saveToSupabaseWithData(data, retryCount + 1, maxRetries), 1000);
           } else {
             Swal.fire({
               icon: "error",
@@ -1426,6 +1520,9 @@
                 });
                 document.getElementById("textBox1").value = "";
                 document.getElementById("textBox2").value = "";
+                document.getElementById("locationTitle").value = "";
+                document.getElementById("locationAddress").value = "";
+                document.getElementById("locationInputs").style.display = "none";
               } else {
                 console.warn("Share cancelled or failed:", result);
                 Swal.fire({
@@ -1456,10 +1553,15 @@
       function clearInputs() {
         const textBox1 = document.getElementById("textBox1");
         const textBox2 = document.getElementById("textBox2");
+        const locationTitle = document.getElementById("locationTitle");
+        const locationAddress = document.getElementById("locationAddress");
+        const locationInputs = document.getElementById("locationInputs");
         if (textBox1) textBox1.value = "";
         if (textBox2) textBox2.value = "";
+        if (locationTitle) locationTitle.value = "";
+        if (locationAddress) locationAddress.value = "";
+        if (locationInputs) locationInputs.style.display = "none";
       }
     </script>
   </body>
 </html>
-```
