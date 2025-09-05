@@ -367,12 +367,15 @@
 
         function addPulseMarker(position, imageUrl, displayName, timestamp) {
             const iconHtml = `
-                            <img src="${imageUrl}" class="w-12 h-12 rounded-full shadow">
-                            <div class="flex-1">
-                                <div class="font-bold text-lg text-gray-700">${displayName}</div>
-                                <div class="text-sm text-gray-500">${new Date(timestamp).toLocaleString('th-TH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} น.</div>
+                          <div style="position: relative; width: 80px; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                            <div style="position: relative; width: 60px; height: 60px;">
+                              <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
+                              <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
                             </div>
-                            <button class="btn btn-primary text-xs">📍 นำทาง</button>
+                            <div style="width: 100%; text-align: center;">
+                              <p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(displayName)}</p>
+                            </div>
+                          </div>
                         `;
 
             const customIcon = L.divIcon({
