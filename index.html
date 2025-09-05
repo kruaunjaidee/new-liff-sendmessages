@@ -79,38 +79,6 @@
         font-size: 1rem;
         box-sizing: border-box;
       }
-      #userList .list-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 10px;
-        padding: 12px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-      }
-      #userList .list-item:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-      #userList img {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-      #userList .list-item-content {
-        flex: 1;
-      }
-      #userList .list-item-content .name {
-        font-weight: bold;
-        font-size: 1rem;
-        color: #333;
-      }
-      #userList .list-item-content .timestamp {
-        font-size: 0.85rem;
-        color: #666;
-      }
       .btn {
         border-radius: 50px;
         padding: 10px 20px;
@@ -152,10 +120,6 @@
         background-color: #747d8c;
         border-color: #747d8c;
       }
-      .btn-success {
-        background-color: #2ed573;
-        border-color: #2ed573;
-      }
       .btn-template {
         background-color: #00c4b4;
         border-color: #00c4b4;
@@ -171,29 +135,6 @@
       .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      }
-      #dataList .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        margin-bottom: 15px;
-      }
-      #dataList .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-      }
-      #dataList .card-body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 15px;
-      }
-      #dataList .card-title {
-        color: #fff;
-        font-size: 1.1rem;
-        margin-bottom: 0;
-      }
-      #dataList .btn-group .btn {
-        padding: 5px 10px;
-        font-size: 0.9rem;
       }
       #template-preview img {
         max-width: 100%;
@@ -405,16 +346,6 @@
           Share Flex
         </button>
       </div>
-      <div class="mt-3 mb-3">
-        <button class="btn btn-success w-100" onclick="saveToSupabase()">
-          บันทึก Flex Message
-        </button>
-        <button class="btn btn-success w-100 mt-2" onclick="saveTemplateToSupabase()">
-          บันทึก Template/Location Message
-        </button>
-      </div>
-      <div style="margin-top: 10px;" id="dataList" class="mt-3 bg-white p-2 rounded"></div>
-      <div id="userList" class="mt-3 bg-white p-2 rounded"></div>
     </div>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -422,9 +353,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
       const liffId = "2005780370-QmwJlX9q";
-      const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
       let profile;
-      window.listData = window.listData || [];
       let jsonIndentLevel = 4;
       let map = null;
       let markers = [];
@@ -437,7 +366,6 @@
               profile = p;
               document.getElementById("pictureUrl").src = profile.pictureUrl;
               document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
-              fetchDataList();
             }).catch((err) => {
               console.error("Error getting LINE profile:", err);
               Swal.fire({
@@ -483,10 +411,11 @@
       }
 
       function addPulseMarker(position, imageUrl, displayName, timestamp) {
-        const iconHtml = `<div style="position: relative; width: 60px; height: 60px;">
-          <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
-          <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
-        </div>`;
+        const iconHtml = `
+          <div style="position: relative; width: 60px; height: 60px;">
+            <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
+            <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
+          </div>`;
 
         const customIcon = L.divIcon({
           html: iconHtml,
@@ -498,94 +427,16 @@
 
         const marker = L.marker(position, { icon: customIcon }).addTo(map);
         marker.bindPopup(`
-          <div class="popup-header">${displayName}</div>
+          <div class="popup-header">${escapeHtml(displayName)}</div>
           <div class="p-3 flex justify-center">
             <img src="${imageUrl}" class="w-20 h-20 rounded-full shadow">
           </div>
           <div class="p-2 text-center">
             <p>อัปเดตล่าสุด: ${new Date(timestamp).toLocaleString('th-TH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} น.</p>
-            <button class="popup-button" onclick="navigateTo(${position[0]},${position[1]})">ไปหาเพื่อนคนนี้</button>
+            <button class="popup-button" onclick="navigateTo(${position[0]},${position[1]})">ไปยังตำแหน่งนี้</button>
           </div>
         `);
         markers.push(marker);
-      }
-
-      async function loadLocations() {
-        if (!profile || !profile.userId) {
-          Swal.fire({
-            icon: "error",
-            title: "โปรไฟล์ยังไม่โหลด",
-            text: "กรุณารอสักครู่แล้วลองใหม่",
-          });
-          return;
-        }
-        showLoading();
-        try {
-          const res = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'getLocations', userId: profile.userId })
-          });
-          if (!res.ok) {
-            const text = await res.text();
-            let errorMessage = `Network response was not ok: ${res.status}`;
-            if (res.status === 400) {
-              errorMessage = `Invalid request: ${text}`;
-            } else if (res.status === 500) {
-              errorMessage = `Server error: ${text}`;
-            }
-            throw new Error(errorMessage);
-          }
-          const result = await res.json();
-          if (!result.data) {
-            throw new Error("No data returned from getLocations");
-          }
-          markers.forEach(m => map && map.removeLayer(m));
-          markers = [];
-          document.getElementById('userList').innerHTML = '';
-
-          result.data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-          result.data.forEach(loc => {
-            if (!loc.latitude || !loc.longitude || !loc.pictureUrl) return;
-            const pos = [parseFloat(loc.latitude), parseFloat(loc.longitude)];
-            if (map) {
-              addPulseMarker(pos, loc.pictureUrl, loc.displayName, loc.timestamp);
-            }
-
-            const listItem = document.createElement('div');
-            listItem.className = "list-item";
-            listItem.innerHTML = `
-              <img src="${loc.pictureUrl}" alt="User" class="w-12 h-12 rounded-full shadow">
-              <div class="list-item-content">
-                <div class="name">${loc.displayName}</div>
-                <div class="timestamp">${new Date(loc.timestamp).toLocaleString('th-TH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} น.</div>
-              </div>
-              <button class="btn btn-primary text-xs">📍 นำทาง</button>
-            `;
-            listItem.querySelector('button').addEventListener('click', () => {
-              if (map) {
-                map.setView(pos, 17);
-              } else {
-                Swal.fire({
-                  icon: "info",
-                  title: "กรุณาแสดงแผนที่ก่อน",
-                  text: "คลิก 'Get Loc' หรือ 'Show Location' เพื่อแสดงแผนที่",
-                });
-              }
-            });
-            document.getElementById('userList').appendChild(listItem);
-          });
-        } catch (error) {
-          console.error("Error fetching locations:", error);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถดึงข้อมูลตำแหน่งได้",
-            text: error.message,
-          });
-        } finally {
-          hideLoading();
-        }
       }
 
       function getLocation() {
@@ -616,7 +467,6 @@
             }).addTo(map);
 
             addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
-            loadLocations();
 
             Swal.fire({
               icon: "success",
@@ -692,7 +542,6 @@
           }).addTo(map);
 
           addPulseMarker([latitude, longitude], profile.pictureUrl, profile.displayName, new Date().toISOString());
-          loadLocations();
 
           flexContainer.style.display = "block";
         } catch (error) {
@@ -1068,7 +917,6 @@
             }
             markers.forEach(m => map && map.removeLayer(m));
             markers = [];
-            document.getElementById('userList').innerHTML = '';
             Swal.fire("ล้างข้อความแล้ว!", "ข้อความทั้งหมดถูกล้างและซ่อนเรียบร้อยแล้ว", "success");
           }
         });
@@ -1345,577 +1193,6 @@
           title: "เกิดข้อผิดพลาด",
           text: errorMessage,
         });
-      }
-
-      async function saveToSupabase(retryCount = 0, maxRetries = 3) {
-        if (!profile || !profile.userId) {
-          Swal.fire({
-            icon: "error",
-            title: "โปรไฟล์ยังไม่โหลด",
-            text: "กรุณารอสักครู่แล้วลองใหม่",
-          });
-          return;
-        }
-        const flexJson = document.getElementById("textBox2").value.trim();
-        const title = document.getElementById("textBox1").value.trim();
-        if (!title) {
-          Swal.fire({
-            icon: "error",
-            title: "กรุณากรอกหัวข้อ",
-            text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
-          });
-          return;
-        }
-        if (!flexJson) {
-          Swal.fire({
-            icon: "error",
-            title: "กรุณากรอก JSON",
-            text: "กรุณากรอก Flex Message JSON ในช่องที่สอง",
-          });
-          return;
-        }
-        let flexObj;
-        try {
-          flexObj = JSON.parse(flexJson);
-          if (!isValidFlexMessage(flexObj)) {
-            throw new Error("ไม่ใช่ Flex Message ที่ถูกต้อง");
-          }
-        } catch (error) {
-          Swal.fire({
-            icon: "error",
-            title: "JSON ไม่ถูกต้อง",
-            text: `กรุณาตรวจสอบ JSON Flex Message ของคุณ: ${error.message}`,
-          });
-          return;
-        }
-        const data = {
-          action: 'saveFlex',
-          title: title,
-          text1: flexJson,
-          userId: profile.userId,
-          displayName: profile.displayName,
-          type: "flex"
-        };
-        Swal.fire({
-          title: "กำลังบันทึกข้อมูล...",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-        try {
-          const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-          });
-          if (!response.ok) {
-            const text = await response.text();
-            let errorMessage = `Network response was not ok: ${response.status}`;
-            if (response.status === 400) {
-              errorMessage = `Invalid request: ${text}`;
-            } else if (response.status === 500) {
-              errorMessage = `Server error: ${text}`;
-            }
-            throw new Error(errorMessage);
-          }
-          const result = await response.json();
-          if (result.success) {
-            Swal.fire({
-              icon: "success",
-              title: "บันทึกข้อมูลเรียบร้อย!",
-              timer: 1500,
-              showConfirmButton: false,
-            });
-            clearInputs();
-            fetchDataList();
-          } else {
-            throw new Error(result.error || "Unknown error occurred");
-          }
-        } catch (error) {
-          console.error("Error saving data:", error);
-          if (retryCount < maxRetries) {
-            console.log(`Retrying saveToSupabase (${retryCount + 1}/${maxRetries})...`);
-            setTimeout(() => saveToSupabase(retryCount + 1, maxRetries), 1000);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
-              text: error.message,
-            });
-          }
-        }
-      }
-
-      async function saveTemplateToSupabase(retryCount = 0, maxRetries = 3) {
-        if (!profile || !profile.userId) {
-          Swal.fire({
-            icon: "error",
-            title: "โปรไฟล์ยังไม่โหลด",
-            text: "กรุณารอสักครู่แล้วลองใหม่",
-          });
-          return;
-        }
-        const templateJson = document.getElementById("textBox2").value.trim();
-        const title = document.getElementById("locationTitle").value.trim() || document.getElementById("textBox1").value.trim();
-        const address = document.getElementById("locationAddress").value.trim();
-        const latitude = document.getElementById("textBox1").value.trim();
-        const longitude = document.getElementById("textBox2").value.trim();
-
-        if (!title) {
-          Swal.fire({
-            icon: "error",
-            title: "กรุณากรอกชื่อสถานที่",
-            text: "กรุณากรอกชื่อสถานที่ในช่องชื่อสถานที่หรือช่องแรก",
-          });
-          return;
-        }
-
-        let messageObj;
-        if (!templateJson) {
-          if (!latitude || !longitude) {
-            Swal.fire({
-              icon: "error",
-              title: "กรุณากรอกพิกัด",
-              text: "กรุณากรอก latitude ในช่องแรกและ longitude ในช่องที่สอง",
-            });
-            return;
-          }
-          const lat = parseFloat(latitude);
-          const lon = parseFloat(longitude);
-          if (isNaN(lat) || isNaN(lon)) {
-            Swal.fire({
-              icon: "error",
-              title: "พิกัดไม่ถูกต้อง",
-              text: "Latitude และ longitude ต้องเป็นตัวเลขที่ถูกต้อง",
-            });
-            return;
-          }
-          messageObj = {
-            type: "location",
-            title: title,
-            address: address || "View on map",
-            latitude: lat,
-            longitude: lon
-          };
-        } else {
-          try {
-            messageObj = JSON.parse(templateJson);
-            if (messageObj.type !== "template" && messageObj.type !== "location") {
-              throw new Error("JSON ต้องมี type เป็น 'template' หรือ 'location' เท่านั้น");
-            }
-            if (messageObj.type === "template" && (!messageObj.template || !["buttons", "confirm", "carousel", "image_carousel"].includes(messageObj.template.type))) {
-              throw new Error("Template type ไม่ถูกต้อง ต้องเป็น buttons, confirm, carousel, หรือ image_carousel");
-            }
-            if (messageObj.type === "location" && (!messageObj.latitude || !messageObj.longitude)) {
-              throw new Error("Location JSON ต้องมี latitude และ longitude");
-            }
-          } catch (error) {
-            Swal.fire({
-              icon: "error",
-              title: "JSON ไม่ถูกต้อง",
-              text: `กรุณาตรวจสอบ JSON ของคุณ: ${error.message}`,
-            });
-            return;
-          }
-        }
-
-        const data = {
-          action: 'saveTemplate',
-          title: title,
-          text1: JSON.stringify(messageObj),
-          userId: profile.userId,
-          displayName: profile.displayName,
-          type: messageObj.type,
-          latitude: messageObj.latitude,
-          longitude: messageObj.longitude
-        };
-
-        Swal.fire({
-          title: "กำลังบันทึกข้อมูล...",
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          },
-        });
-        try {
-          const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-          });
-          if (!response.ok) {
-            const text = await response.text();
-            let errorMessage = `Network response was not ok: ${response.status}`;
-            if (response.status === 400) {
-              errorMessage = `Invalid request: ${text}`;
-            } else if (response.status === 500) {
-              errorMessage = `Server error: ${text}`;
-            }
-            throw new Error(errorMessage);
-          }
-          const result = await response.json();
-          if (result.success) {
-            Swal.fire({
-              icon: "success",
-              title: "บันทึกข้อมูลเรียบร้อย!",
-              timer: 1500,
-              showConfirmButton: false,
-            });
-            clearInputs();
-            fetchDataList();
-          } else {
-            throw new Error(result.error || "Unknown error occurred");
-          }
-        } catch (error) {
-          console.error("Error saving data:", error);
-          if (retryCount < maxRetries) {
-            console.log(`Retrying saveTemplateToSupabase (${retryCount + 1}/${maxRetries})...`);
-            setTimeout(() => saveTemplateToSupabase(retryCount + 1, maxRetries), 1000);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
-              text: error.message,
-            });
-          }
-        }
-      }
-
-      async function fetchDataList(retryCount = 0, maxRetries = 3) {
-        if (!profile || !profile.userId) {
-          console.warn("Profile not loaded yet, skipping fetchDataList");
-          return;
-        }
-        try {
-          const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          if (!response.ok) {
-            const text = await response.text();
-            let errorMessage = `Network response was not ok: ${response.status}`;
-            if (response.status === 400) {
-              errorMessage = `Invalid request: ${text}`;
-            } else if (response.status === 500) {
-              errorMessage = `Server error: ${text}`;
-            }
-            throw new Error(errorMessage);
-          }
-          const data = await response.json();
-          if (!Array.isArray(data)) {
-            throw new Error("Data is not an array");
-          }
-          window.listData = data;
-          const listHtml = data
-            .map((item) => {
-              const title = escapeHtml(item.title || "");
-              return `
-                <div class="card" id="item-${item.id}">
-                  <div class="card-body">
-                    <h5 class="card-title">${title}</h5>
-                    <div class="btn-group">
-                      <button class="btn btn-sm btn-primary" onclick="shareListItem('${item.id}')">แชร์</button>
-                      <button class="btn btn-sm btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
-                      <button class="btn btn-sm btn-info" onclick="showMessage('${item.id}')">แสดง</button>
-                    </div>
-                  </div>
-                </div>
-              `;
-            })
-            .join("");
-          const dataListElement = document.getElementById("dataList");
-          if (dataListElement) {
-            dataListElement.innerHTML = listHtml || "<p>ไม่มีข้อมูล</p>";
-          } else {
-            console.error("Element with id 'dataList' not found");
-          }
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          if (retryCount < maxRetries) {
-            console.log(`Retrying fetchDataList (${retryCount + 1}/${maxRetries})...`);
-            setTimeout(() => fetchDataList(retryCount + 1, maxRetries), 1000);
-          } else {
-            const dataListElement = document.getElementById("dataList");
-            if (dataListElement) {
-              dataListElement.innerHTML = `<p class="text-danger">Error loading data: ${error.message}</p>`;
-            }
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถโหลดข้อมูลได้",
-              text: "กรุณาลองรีเฟรชหน้าเว็บ",
-            });
-          }
-        }
-      }
-
-      async function showMessage(id, retryCount = 0, maxRetries = 1) {
-        if (!window.listData || !Array.isArray(window.listData)) {
-          console.warn("listData is not initialized, attempting to fetch...");
-          if (retryCount < maxRetries) {
-            await fetchDataList();
-            showMessage(id, retryCount + 1, maxRetries);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถโหลดข้อมูลได้",
-              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-              confirmButtonText: "รีเฟรช",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetchDataList();
-              }
-            });
-          }
-          return;
-        }
-        const item = window.listData.find(item => String(item.id) === String(id));
-        if (!item) {
-          console.error("showMessage: Item not found for id:", id);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแสดงข้อมูลได้",
-            text: "ไม่พบรายการที่ร้องขอ กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
-          return;
-        }
-        if (!item.text1 || !item.type) {
-          console.error("showMessage: Missing text1 or type for item:", item);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแสดงข้อมูลได้",
-            text: "ข้อมูลข้อความไม่สมบูรณ์",
-          });
-          return;
-        }
-        const flexContainer = document.getElementById("flex1");
-        if (!flexContainer) {
-          console.error("Flex container not found");
-          Swal.fire({
-            icon: "error",
-            title: "ข้อผิดพลาด",
-            text: "ไม่พบคอนเทนเนอร์สำหรับแสดงข้อความ",
-          });
-          return;
-        }
-        flexContainer.innerHTML = "";
-        try {
-          document.getElementById("textBox2").value = item.text1;
-          formatJson();
-          const obj = JSON.parse(item.text1);
-          if (item.type === "flex") {
-            if (!isValidFlexMessage(obj)) {
-              throw new Error("Invalid Flex message structure");
-            }
-            let flexMessage;
-            if (obj.type === "bubble" || obj.type === "carousel") {
-              flexMessage = {
-                type: "flex",
-                altText: item.title || "Flex Message",
-                contents: obj,
-              };
-            } else {
-              flexMessage = obj;
-            }
-            if (typeof flex2html === "function") {
-              flex2html("flex1", flexMessage);
-              flexContainer.style.display = "block";
-              flexContainer.scrollIntoView({ behavior: "smooth" });
-            } else {
-              console.error("flex2html function is not available");
-              flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
-            }
-          } else if (item.type === "template") {
-            flexContainer.innerHTML = `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
-            flexContainer.style.display = "block";
-            flexContainer.scrollIntoView({ behavior: "smooth" });
-          } else if (item.type === "location") {
-            flexContainer.innerHTML = '<div id="map"></div>';
-            if (!obj.latitude || !obj.longitude) {
-              throw new Error("Invalid location message format");
-            }
-            map = L.map('map').setView([obj.latitude, obj.longitude], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            addPulseMarker(
-              [obj.latitude, obj.longitude],
-              obj.pictureUrl || profile.pictureUrl,
-              obj.displayName || profile.displayName,
-              obj.timestamp || new Date().toISOString()
-            );
-            loadLocations();
-            flexContainer.style.display = "block";
-            flexContainer.scrollIntoView({ behavior: "smooth" });
-          } else {
-            throw new Error("Unknown message type");
-          }
-        } catch (e) {
-          console.error("Error parsing or displaying message JSON:", e, "item:", item);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแสดงข้อความได้",
-            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
-          });
-        }
-      }
-
-      async function deleteListItem(id) {
-        Swal.fire({
-          title: "คุณแน่ใจหรือไม่?",
-          text: "คุณต้องการลบรายการนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "ใช่, ลบเลย!",
-          cancelButtonText: "ยกเลิก",
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            try {
-              await deleteItemFromServer(id);
-              Swal.fire({
-                icon: "success",
-                title: "ลบสำเร็จ!",
-                text: "รายการถูกลบเรียบร้อยแล้ว",
-                timer: 1500,
-                showConfirmButton: false,
-              });
-              fetchDataList();
-            } catch (error) {
-              console.error("Error deleting item:", error);
-              Swal.fire({
-                icon: "error",
-                title: "ไม่สามารถลบรายการได้",
-                text: error.message,
-              });
-            }
-          }
-        });
-      }
-
-      async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {
-        if (!profile || !profile.userId) {
-          throw new Error("โปรไฟล์ยังไม่โหลด");
-        }
-        try {
-          const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          if (!response.ok) {
-            const text = await response.text();
-            let errorMessage = `Network response was not ok: ${response.status}`;
-            if (response.status === 400) {
-              errorMessage = `Invalid request: ${text}`;
-            } else if (response.status === 403) {
-              errorMessage = `Unauthorized: ${text}`;
-            } else if (response.status === 404) {
-              errorMessage = `Item not found: ${text}`;
-            } else if (response.status === 500) {
-              errorMessage = `Server error: ${text}`;
-            }
-            throw new Error(errorMessage);
-          }
-          const data = await response.json();
-          if (!data.success) {
-            throw new Error(data.error || "Unknown error occurred");
-          }
-          return data;
-        } catch (error) {
-          if (retryCount < maxRetries) {
-            console.log(`Retrying deleteItemFromServer (${retryCount + 1}/${maxRetries})...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return deleteItemFromServer(id, retryCount + 1, maxRetries);
-          }
-          throw error;
-        }
-      }
-
-      async function shareListItem(id, retryCount = 0, maxRetries = 1) {
-        if (!window.listData || !Array.isArray(window.listData)) {
-          console.warn("listData is not initialized, attempting to fetch...");
-          if (retryCount < maxRetries) {
-            await fetchDataList();
-            shareListItem(id, retryCount + 1, maxRetries);
-          } else {
-            Swal.fire({
-              icon: "error",
-              title: "ไม่สามารถโหลดข้อมูลได้",
-              text: "ไม่สามารถโหลดรายการข้อมูล กรุณารีเฟรชหน้าเว็บ",
-              confirmButtonText: "รีเฟรช",
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetchDataList();
-              }
-            });
-          }
-          return;
-        }
-        const item = window.listData.find(item => String(item.id) === String(id));
-        if (!item) {
-          console.error("shareListItem: Item not found for id:", id);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแชร์ข้อมูลได้",
-            text: "ไม่พบรายการที่ร้องขอ กรุณารีเฟรชหน้าเว็บ",
-            confirmButtonText: "รีเฟรช",
-          }).then((result) => {
-            if (result.isConfirmed) {
-              fetchDataList();
-            }
-          });
-          return;
-        }
-        if (!item.text1 || !item.type) {
-          console.error("shareListItem: Missing text1 or type for item:", item);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแชร์ข้อมูลได้",
-            text: "ข้อมูลข้อความไม่สมบูรณ์",
-          });
-          return;
-        }
-        try {
-          document.getElementById("textBox2").value = item.text1;
-          const messageObjRaw = JSON.parse(item.text1);
-          let messageObj;
-          if (item.type === "flex") {
-            if (!isValidFlexMessage(messageObjRaw)) {
-              throw new Error("Invalid Flex message structure");
-            }
-            messageObj = {
-              type: "flex",
-              altText: item.title || "Flex Message",
-              contents: messageObjRaw.type === "bubble" || messageObjRaw.type === "carousel" ? messageObjRaw : messageObjRaw.contents,
-            };
-          } else if (item.type === "template" || item.type === "location") {
-            messageObj = messageObjRaw;
-          } else {
-            throw new Error("Unknown message type");
-          }
-          sendMessage(messageObj);
-        } catch (error) {
-          console.error("Error sharing item:", error);
-          Swal.fire({
-            icon: "error",
-            title: "ไม่สามารถแชร์ข้อมูลได้",
-            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${error.message}`,
-          });
-        }
       }
 
       function sendMessage(messageObj) {
