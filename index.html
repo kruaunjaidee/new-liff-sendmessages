@@ -270,30 +270,65 @@
             border-radius: 10px;
             padding: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
         }
-        .data-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .data-item:last-child {
-            border-bottom: none;
-        }
-        .data-item span {
-            flex-grow: 1;
-            margin-right: 10px;
+        #dataList table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.9rem;
-            color: #333;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
-        .data-item .btn {
-            margin-left: 5px;
-            padding: 5px 10px;
+        #dataList th, #dataList td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        #dataList th {
+            background-color: #2575fc;
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        #dataList tr {
+            transition: background-color 0.2s ease;
+        }
+        #dataList tr:hover {
+            background-color: rgba(37, 117, 252, 0.1);
+        }
+        #dataList td.actions {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+        #dataList .btn {
+            padding: 6px 12px;
             font-size: 0.8rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        #dataList .btn-primary {
+            background-color: #2575fc;
+            border-color: #2575fc;
+        }
+        #dataList .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        #dataList .btn-danger {
+            background-color: #ff4757;
+            border-color: #ff4757;
+        }
+        #dataList .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        #dataList .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
         }
     </style>
 </head>
@@ -399,7 +434,6 @@
                         document.getElementById("displayName").textContent = `สวัสดี: ${profile.displayName}`;
                         fetchDataList();
                     }).catch((err) => {
-                        console.error("Error getting LINE profile:", err);
                         Swal.fire({
                             icon: "error",
                             title: "ไม่สามารถดึงข้อมูลโปรไฟล์ได้",
@@ -411,7 +445,6 @@
                 }
             })
             .catch((err) => {
-                console.error("LIFF initialization failed:", err);
                 Swal.fire({
                     icon: "error",
                     title: "ไม่สามารถเริ่มต้น LIFF ได้",
@@ -449,7 +482,7 @@
                         <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
                         <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
                     </div>
-                    <div style="width: 200px; text-align: center;">
+                    <div style="width: 80px; text-align: center;">
                         <p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(displayName)}</p>
                     </div>
                 </div>
@@ -466,7 +499,7 @@
                 <div id="leaflet-popup-content">
                     <div class="popup-header">${escapeHtml(displayName)}</div>
                     <div class="popup-image-container">
-                        <img src="${imageUrl}" style="width:192px; height:192px;" class="popup-image">
+                        <img src="${imageUrl}" class="popup-image">
                     </div>
                     <div class="p-2 text-center">
                         <p>อัปเดตล่าสุด: ${new Date(timestamp).toLocaleString('th-TH', {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} น.</p>
@@ -583,7 +616,6 @@
 
                 flexContainer.style.display = "block";
             } catch (error) {
-                console.error("Error showing location:", error);
                 flexContainer.innerHTML = `<p class="text-danger">Invalid location data: ${error.message}</p>`;
                 Swal.fire({
                     icon: "error",
@@ -801,11 +833,9 @@
                 if (typeof flex2html === "function") {
                     flex2html("flex1", flexMessage);
                 } else {
-                    console.error("flex2html function is not available");
                     flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
                 }
             } catch (error) {
-                console.error("Error parsing Flex JSON:", error);
                 flexContainer.innerHTML = '<p class="text-danger">Invalid Flex JSON. Please check your input.</p>';
             }
         }
@@ -836,7 +866,6 @@
                 const templateObject = JSON.parse(templateJson);
                 flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
             } catch (error) {
-                console.error("Error parsing JSON:", error);
                 flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
             }
         }
@@ -865,7 +894,6 @@
                     showConfirmButton: false,
                 });
             } catch (error) {
-                console.error("Error formatting JSON:", error);
                 Swal.fire({
                     icon: "error",
                     title: "Invalid JSON",
@@ -900,7 +928,6 @@
                 }
                 sendMessage(messageObj);
             } catch (error) {
-                console.error("Error parsing Message JSON:", error);
                 Swal.fire({
                     icon: "error",
                     title: "Invalid Message JSON",
@@ -976,7 +1003,6 @@
             try {
                 contents = JSON.parse(document.getElementById("textBox2").value);
             } catch (e) {
-                console.error("Error parsing Flex JSON:", e);
                 Swal.fire({
                     icon: "error",
                     title: "Invalid Flex Message format",
@@ -1123,7 +1149,6 @@
             scanner
                 .start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
                 .catch((error) => {
-                    console.error("Error starting scanner:", error);
                     showCameraAccessInstructions();
                 });
             const closeButton = document.createElement("button");
@@ -1141,7 +1166,7 @@
                         scanner.clear();
                         document.getElementById("qrScannerContainer").innerHTML = "";
                     })
-                    .catch((error) => console.error("Error stopping scanner:", error));
+                    .catch((error) => {});
             }
         }
 
@@ -1181,9 +1206,7 @@
             document.getElementById("qr-reader").style.display = "none";
         }
 
-        function onScanError(error) {
-            console.warn(`QR error: ${error}`);
-        }
+        function onScanError(error) {}
 
         function showCameraAccessInstructions() {
             Swal.fire({
@@ -1241,7 +1264,6 @@
                     });
                 })
                 .catch((error) => {
-                    console.error("Error sharing message:", error);
                     Swal.fire({
                         icon: "error",
                         title: "ไม่สามารถแชร์ข้อความได้",
@@ -1313,7 +1335,6 @@
                 });
                 fetchDataList();
             } catch (error) {
-                console.error("Error saving to Supabase:", error);
                 Swal.fire({
                     icon: "error",
                     title: "ไม่สามารถบันทึก Flex Message",
@@ -1377,7 +1398,6 @@
                 });
                 fetchDataList();
             } catch (error) {
-                console.error("Error saving to Supabase:", error);
                 Swal.fire({
                     icon: "error",
                     title: "ไม่สามารถบันทึก Template Message",
@@ -1407,7 +1427,6 @@
                 window.listData = data;
                 renderDataList();
             } catch (error) {
-                console.error("Error fetching data from Supabase:", error);
                 Swal.fire({
                     icon: "error",
                     title: "ไม่สามารถดึงข้อมูล",
@@ -1422,17 +1441,28 @@
             const dataListContainer = document.getElementById("dataList");
             dataListContainer.innerHTML = "";
             if (!window.listData || window.listData.length === 0) {
-                dataListContainer.innerHTML = '<p class="text-center">ไม่มีข้อมูลที่บันทึกไว้</p>';
+                dataListContainer.innerHTML = '<p class="no-data">ไม่มีข้อมูลที่บันทึกไว้</p>';
                 return;
             }
+            const table = document.createElement("table");
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>ชื่อข้อความ</th>
+                        <th>ประเภท</th>
+                        <th>การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector("tbody");
             window.listData.forEach((item, index) => {
                 if (!item || !item.messageType || !item.contents) {
-                    console.warn(`Invalid data item at index ${index}`, item);
                     return;
                 }
-                const itemElement = document.createElement("div");
-                itemElement.className = "data-item";
+                const row = document.createElement("tr");
                 let displayText = 'Unknown Message';
+                let messageType = item.messageType;
                 if (item.messageType === 'flex') {
                     displayText = item.altText || 'Flex Message';
                 } else if (item.messageType === 'location' && item.contents && typeof item.contents === 'object') {
@@ -1440,16 +1470,18 @@
                 } else if (item.messageType === 'template' && item.contents && typeof item.contents === 'object') {
                     displayText = item.contents.altText || 'Template Message';
                 }
-                itemElement.innerHTML = `
-                    <span>${escapeHtml(displayText)}</span>
-                    <div>
+                row.innerHTML = `
+                    <td>${escapeHtml(displayText)}</td>
+                    <td>${escapeHtml(messageType.charAt(0).toUpperCase() + messageType.slice(1))}</td>
+                    <td class="actions">
                         <button class="btn btn-primary" onclick="showData(${index})">แสดง</button>
                         <button class="btn btn-success" onclick="shareData(${index})">แชร์</button>
                         <button class="btn btn-danger" onclick="deleteData(${index})">ลบ</button>
-                    </div>
+                    </td>
                 `;
-                dataListContainer.appendChild(itemElement);
+                tbody.appendChild(row);
             });
+            dataListContainer.appendChild(table);
         }
 
         function showData(index) {
@@ -1531,7 +1563,6 @@
                             showConfirmButton: false,
                         });
                     } catch (error) {
-                        console.error("Error deleting data:", error);
                         Swal.fire({
                             icon: "error",
                             title: "ไม่สามารถลบข้อมูล",
