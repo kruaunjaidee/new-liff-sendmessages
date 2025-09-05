@@ -342,11 +342,11 @@
         <h2 class="text-white text-center">❤️ ShareTargetPicker ❤️</h2>
         <div class="mb-3">
             <input class="form-control" type="text" id="textBox1"
-                placeholder="latitude สำหรับ Location หรือ packageId สำหรับ Sticker" />
+                placeholder="หัวข้อสำหรับ Flex หรือ Template" />
         </div>
         <div class="mb-3">
             <textarea class="form-control" id="textBox2"
-                placeholder="longitude หรือ JSON (สำหรับ Template/Location)"></textarea>
+                placeholder="JSON สำหรับ Flex หรือ Template"></textarea>
         </div>
         <div id="locationInputs">
             <div class="mb-3">
@@ -424,6 +424,7 @@
         let map = null;
         let markers = [];
         window.listData = window.listData || [];
+        window.currentItemId = null;
 
         liff
             .init({ liffId })
@@ -483,7 +484,7 @@
                         <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
                         <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
                     </div>
-                    <div style="width: 80px; text-align: center;">
+                    <div style="width: 200px; text-align: center;">
                         <p style="margin: 0; font-size: 0.85rem; color: #333; font-weight: bold; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(displayName)}</p>
                     </div>
                 </div>
@@ -907,6 +908,387 @@
             return packageId && stickerId && /^\d+$/.test(packageId) && /^\d+$/.test(stickerId);
         }
 
+        function isValidFlexMessage(obj) {
+            return (
+                obj &&
+                (obj.type === "bubble" ||
+                    obj.type === "carousel" ||
+                    (obj.type === "flex" && obj.contents))
+            );
+        }
+
+        function isValidTemplateMessage(obj) {
+            return obj && (obj.type === "template" || obj.type === "location");
+        }
+
+        async function saveToSupabase(retryCount = 0, maxRetries = 3) {
+            if (!profile || !profile.userId) {
+                Swal.fire({
+                    icon: "error",
+                    title: "โปรไฟล์ยังไม่โหลด",
+                    text: "กรุณารอสักครู่แล้วลองใหม่",
+                });
+                return;
+            }
+            const flexJson = document.getElementById("textBox2").value;
+            const title = document.getElementById("textBox1").value;
+            if (!title.trim()) {
+                Swal.fire({
+                    icon: "error",
+                    title: "กรุณากรอกหัวข้อ",
+                    text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
+                });
+                return;
+            }
+            let flexObj;
+            try {
+                flexObj = JSON.parse(flexJson);
+                if (!isValidFlexMessage(flexObj)) {
+                    throw new Error("ไม่ใช่ Flex Message ที่ถูกต้อง");
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Flex Message ของคุณ: ${error.message}`,
+                });
+                return;
+            }
+            const data = {
+                id: window.currentItemId || undefined,
+                title: title,
+                text1: flexJson,
+                userId: profile.userId,
+                displayName: profile.displayName,
+                type: "flex"
+            };
+            showLoading();
+            try {
+                const method = window.currentItemId ? "PUT" : "POST";
+                const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    let errorMessage = `Network response was not ok: ${response.status}`;
+                    if (response.status === 400) {
+                        errorMessage = `Invalid request: ${text}`;
+                    } else if (response.status === 500) {
+                        errorMessage = `Server error: ${text}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+                    window.currentItemId = null;
+                    clearInputs();
+                    fetchDataList();
+                } else {
+                    throw new Error(result.error || "Unknown error occurred");
+                }
+            } catch (error) {
+                if (retryCount < maxRetries) {
+                    setTimeout(() => saveToSupabase(retryCount + 1, maxRetries), 1000);
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+                        text: error.message,
+                    });
+                }
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function saveTemplateToSupabase(retryCount = 0, maxRetries = 3) {
+            if (!profile || !profile.userId) {
+                Swal.fire({
+                    icon: "error",
+                    title: "โปรไฟล์ยังไม่โหลด",
+                    text: "กรุณารอสักครู่แล้วลองใหม่",
+                });
+                return;
+            }
+            const templateJson = document.getElementById("textBox2").value;
+            const title = document.getElementById("textBox1").value;
+            if (!title.trim()) {
+                Swal.fire({
+                    icon: "error",
+                    title: "กรุณากรอกหัวข้อ",
+                    text: "หัวข้อไม่สามารถเป็นค่าว่างได้",
+                });
+                return;
+            }
+            let templateObj;
+            try {
+                templateObj = JSON.parse(templateJson);
+                if (!isValidTemplateMessage(templateObj)) {
+                    throw new Error("ไม่ใช่ Template Message ที่ถูกต้อง: ต้องมีฟิลด์ 'type'");
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `กรุณาตรวจสอบ JSON Template Message ของคุณ: ${error.message}`,
+                });
+                return;
+            }
+            const data = {
+                id: window.currentItemId || undefined,
+                title: title,
+                text1: templateJson,
+                userId: profile.userId,
+                displayName: profile.displayName,
+                type: "template"
+            };
+            showLoading();
+            try {
+                const method = window.currentItemId ? "PUT" : "POST";
+                const response = await fetch(SUPABASE_FUNCTIONS_URL, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    let errorMessage = `Network response was not ok: ${response.status}`;
+                    if (response.status === 400) {
+                        errorMessage = `Invalid request: ${text}`;
+                    } else if (response.status === 500) {
+                        errorMessage = `Server error: ${text}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: window.currentItemId ? "อัปเดตข้อมูลเรียบร้อย!" : "บันทึกข้อมูลเรียบร้อย!",
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+                    window.currentItemId = null;
+                    clearInputs();
+                    fetchDataList();
+                } else {
+                    throw new Error(result.error || "Unknown error occurred");
+                }
+            } catch (error) {
+                if (retryCount < maxRetries) {
+                    setTimeout(() => saveTemplateToSupabase(retryCount + 1, maxRetries), 1000);
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "เกิดข้อผิดพลาดในการบันทึกข้อมูล",
+                        text: error.message,
+                    });
+                }
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function fetchDataList(retryCount = 0, maxRetries = 3) {
+            if (!profile || !profile.userId) {
+                return;
+            }
+            showLoading();
+            try {
+                const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    let errorMessage = `Network response was not ok: ${response.status}`;
+                    if (response.status === 400) {
+                        errorMessage = `Invalid request: ${text}`;
+                    } else if (response.status === 500) {
+                        errorMessage = `Server error: ${text}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                const data = await response.json();
+                if (!Array.isArray(data)) {
+                    throw new Error("Data is not an array");
+                }
+                window.listData = data;
+                renderDataList();
+            } catch (error) {
+                if (retryCount < maxRetries) {
+                    setTimeout(() => fetchDataList(retryCount + 1, maxRetries), 1000);
+                } else {
+                    const dataListElement = document.getElementById("dataList");
+                    if (dataListElement) {
+                        dataListElement.innerHTML = `<p class="no-data">เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}</p>`;
+                    }
+                    Swal.fire({
+                        icon: "error",
+                        title: "ไม่สามารถโหลดข้อมูลได้",
+                        text: "กรุณาลองรีเฟรชหน้าเว็บ",
+                    });
+                }
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderDataList() {
+            const dataListContainer = document.getElementById("dataList");
+            dataListContainer.innerHTML = "";
+            if (!window.listData || window.listData.length === 0) {
+                dataListContainer.innerHTML = '<p class="no-data">ไม่มีข้อมูลที่บันทึกไว้</p>';
+                return;
+            }
+            const table = document.createElement("table");
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>หัวข้อ</th>
+                        <th>ประเภท</th>
+                        <th>การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector("tbody");
+            window.listData.forEach((item, index) => {
+                if (!item) return;
+                const row = document.createElement("tr");
+                const title = item.title || 'ไม่มีหัวข้อ';
+                const type = item.type || 'unknown';
+                row.innerHTML = `
+                    <td>${escapeHtml(title)}</td>
+                    <td>${escapeHtml(type.charAt(0).toUpperCase() + type.slice(1))}</td>
+                    <td class="actions">
+                        <button class="btn btn-primary" onclick="showMessage('${item.id}')">แสดง</button>
+                        <button class="btn btn-success" onclick="shareListItem('${item.id}')">แชร์</button>
+                        <button class="btn btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            dataListContainer.appendChild(table);
+        }
+
+        function showMessage(id) {
+            const item = window.listData.find(item => item.id === id);
+            if (!item || !item.text1) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่พบข้อมูล",
+                    text: "ข้อมูลที่เลือกไม่พบหรือไม่ถูกต้อง",
+                });
+                return;
+            }
+            document.getElementById("textBox1").value = item.title || '';
+            document.getElementById("textBox2").value = item.text1;
+            window.currentItemId = item.id;
+            if (item.type === 'flex') {
+                showFlex();
+                toggleMessageDisplay('flex1');
+            } else {
+                showTemplate();
+                toggleMessageDisplay('flex1');
+            }
+        }
+
+        function shareListItem(id) {
+            const item = window.listData.find(item => item.id === id);
+            if (!item || !item.text1) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่พบข้อมูล",
+                    text: "ข้อมูลที่เลือกไม่พบหรือไม่ถูกต้อง",
+                });
+                return;
+            }
+            let messageObj;
+            try {
+                messageObj = JSON.parse(item.text1);
+                if (item.type === 'flex') {
+                    messageObj = { type: 'flex', altText: item.title || 'Flex Message', contents: messageObj };
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "JSON ไม่ถูกต้อง",
+                    text: `ไม่สามารถแชร์ได้: ${error.message}`,
+                });
+                return;
+            }
+            sendMessage(messageObj);
+        }
+
+        async function deleteListItem(id) {
+            const item = window.listData.find(item => item.id === id);
+            if (!item || !item.id) {
+                Swal.fire({
+                    icon: "error",
+                    title: "ไม่พบข้อมูล",
+                    text: "ข้อมูลที่เลือกไม่พบหรือไม่มี ID",
+                });
+                return;
+            }
+            Swal.fire({
+                title: "คุณแน่ใจหรือไม่?",
+                text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "ใช่, ลบ",
+                cancelButtonText: "ยกเลิก",
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    showLoading();
+                    try {
+                        const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/${item.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                        if (!response.ok) {
+                            throw new Error('ไม่สามารถลบข้อมูล');
+                        }
+                        window.listData = window.listData.filter(item => item.id !== id);
+                        renderDataList();
+                        Swal.fire({
+                            icon: "success",
+                            title: "ลบสำเร็จ!",
+                            text: "ข้อมูลถูกลบเรียบร้อยแล้ว",
+                            timer: 1500,
+                            showConfirmButton: false,
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "ไม่สามารถลบข้อมูล",
+                            text: error.message,
+                        });
+                    } finally {
+                        hideLoading();
+                    }
+                }
+            });
+        }
+
         function sendTemplate() {
             const templateJson = document.getElementById("textBox2").value.trim();
             if (!templateJson) {
@@ -919,7 +1301,7 @@
             }
             try {
                 const messageObj = JSON.parse(templateJson);
-                if (messageObj.type !== "template" && messageObj.type !== "location") {
+                if (!isValidTemplateMessage(messageObj)) {
                     Swal.fire({
                         icon: "error",
                         title: "Invalid Message Type",
@@ -977,6 +1359,7 @@
                     document.getElementById("flex1").style.display = "none";
                     document.getElementById("showtext").style.display = "none";
                     document.getElementById("locationInputs").style.display = "none";
+                    window.currentItemId = null;
                     if (map) {
                         map.remove();
                         map = null;
@@ -1025,15 +1408,6 @@
                 contents: contents,
             };
             sendMessage(messageObj);
-        }
-
-        function isValidFlexMessage(obj) {
-            return (
-                obj &&
-                (obj.type === "bubble" ||
-                    obj.type === "carousel" ||
-                    (obj.type === "flex" && obj.contents))
-            );
         }
 
         function sendVideo() {
@@ -1276,310 +1650,13 @@
                 });
         }
 
-        async function saveToSupabase() {
-            if (!profile || !profile.userId) {
-                Swal.fire({
-                    icon: "error",
-                    title: "โปรไฟล์ยังไม่โหลด",
-                    text: "กรุณารอสักครู่แล้วลองใหม่",
-                });
-                return;
-            }
-            const altText = document.getElementById("textBox1").value.trim();
-            const flexJson = document.getElementById("textBox2").value.trim();
-            if (!flexJson) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่มีข้อมูล JSON",
-                    text: "กรุณาใส่ JSON ในช่องที่สอง",
-                });
-                return;
-            }
-            try {
-                const flexObject = JSON.parse(flexJson);
-                if (!isValidFlexMessage(flexObject)) {
-                    Swal.fire({
-                        icon: "error",
-                        title: "โครงสร้าง Flex Message ไม่ถูกต้อง",
-                        text: "กรุณาตรวจสอบว่า JSON เป็นไปตามรูปแบบ Flex Message",
-                    });
-                    return;
-                }
-                const messageObj = {
-                    type: "flex",
-                    altText: altText || "Flex Message",
-                    contents: flexObject,
-                };
-                showLoading();
-                const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId: profile.userId,
-                        messageType: 'flex',
-                        altText: altText,
-                        contents: flexObject,
-                    }),
-                });
-                if (!response.ok) {
-                    throw new Error('ไม่สามารถบันทึก Flex Message');
-                }
-                const result = await response.json();
-                Swal.fire({
-                    icon: "success",
-                    title: "บันทึกสำเร็จ!",
-                    text: "Flex Message ถูกบันทึกเรียบร้อยแล้ว",
-                    timer: 1500,
-                    showConfirmButton: false,
-                });
-                fetchDataList();
-            } catch (error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่สามารถบันทึก Flex Message",
-                    text: error.message,
-                });
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function saveTemplateToSupabase() {
-            if (!profile || !profile.userId) {
-                Swal.fire({
-                    icon: "error",
-                    title: "โปรไฟล์ยังไม่โหลด",
-                    text: "กรุณารอสักครู่แล้วลองใหม่",
-                });
-                return;
-            }
-            const templateJson = document.getElementById("textBox2").value.trim();
-            if (!templateJson) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่มีข้อมูล JSON",
-                    text: "กรุณาใส่ JSON ในช่องที่สอง",
-                });
-                return;
-            }
-            try {
-                const messageObj = JSON.parse(templateJson);
-                if (messageObj.type !== "template" && messageObj.type !== "location") {
-                    Swal.fire({
-                        icon: "error",
-                        title: "ประเภทข้อความไม่ถูกต้อง",
-                        text: "JSON ต้องมี type เป็น 'template' หรือ 'location'",
-                    });
-                    return;
-                }
-                showLoading();
-                const response = await fetch(SUPABASE_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId: profile.userId,
-                        messageType: messageObj.type,
-                        contents: messageObj,
-                    }),
-                });
-                if (!response.ok) {
-                    throw new Error('ไม่สามารถบันทึก Template Message');
-                }
-                const result = await response.json();
-                Swal.fire({
-                    icon: "success",
-                    title: "บันทึกสำเร็จ!",
-                    text: "Template Message ถูกบันทึกเรียบร้อยแล้ว",
-                    timer: 1500,
-                    showConfirmButton: false,
-                });
-                fetchDataList();
-            } catch (error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่สามารถบันทึก Template Message",
-                    text: error.message,
-                });
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function fetchDataList() {
-            if (!profile || !profile.userId) {
-                return;
-            }
-            showLoading();
-            try {
-                const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${profile.userId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-                if (!response.ok) {
-                    throw new Error('ไม่สามารถดึงข้อมูลจาก Supabase');
-                }
-                const data = await response.json();
-                window.listData = Array.isArray(data) ? data : [];
-                renderDataList();
-            } catch (error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่สามารถดึงข้อมูล",
-                    text: error.message,
-                });
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function renderDataList() {
-            const dataListContainer = document.getElementById("dataList");
-            dataListContainer.innerHTML = "";
-            if (!window.listData || window.listData.length === 0) {
-                dataListContainer.innerHTML = '<p class="no-data">ไม่มีข้อมูลที่บันทึกไว้</p>';
-                return;
-            }
-            const table = document.createElement("table");
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>ชื่อข้อความ</th>
-                        <th>ประเภท</th>
-                        <th>การดำเนินการ</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector("tbody");
-            window.listData.forEach((item, index) => {
-                if (!item) return;
-                const row = document.createElement("tr");
-                const messageType = item.messageType || 'unknown';
-                let displayText = 'Unknown Message';
-                if (messageType === 'flex') {
-                    displayText = item.altText || 'Flex Message';
-                } else if (messageType === 'location' && item.contents && typeof item.contents === 'object') {
-                    displayText = item.contents.title || 'Location Message';
-                } else if (messageType === 'template' && item.contents && typeof item.contents === 'object') {
-                    displayText = item.contents.altText || 'Template Message';
-                }
-                row.innerHTML = `
-                    <td>${escapeHtml(displayText)}</td>
-                    <td>${escapeHtml(messageType.charAt(0).toUpperCase() + messageType.slice(1))}</td>
-                    <td class="actions">
-                        <button class="btn btn-primary" onclick="showData(${index})">แสดง</button>
-                        <button class="btn btn-success" onclick="shareData(${index})">แชร์</button>
-                        <button class="btn btn-danger" onclick="deleteData(${index})">ลบ</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-            dataListContainer.appendChild(table);
-        }
-
-        function showData(index) {
-            const item = window.listData[index];
-            if (!item || !item.contents) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่พบข้อมูล",
-                    text: "ข้อมูลที่เลือกไม่พบหรือไม่ถูกต้อง",
-                });
-                return;
-            }
-            document.getElementById("textBox1").value = item.messageType === 'flex' ? (item.altText || '') : '';
-            document.getElementById("textBox2").value = JSON.stringify(item.contents, null, 2);
-            if (item.messageType === 'flex') {
-                showFlex();
-                toggleMessageDisplay('flex1');
-            } else {
-                showTemplate();
-                toggleMessageDisplay('flex1');
-            }
-        }
-
-        function shareData(index) {
-            const item = window.listData[index];
-            if (!item || !item.contents) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่พบข้อมูล",
-                    text: "ข้อมูลที่เลือกไม่พบหรือไม่ถูกต้อง",
-                });
-                return;
-            }
-            const messageObj = item.messageType === 'flex' 
-                ? { type: 'flex', altText: item.altText || 'Flex Message', contents: item.contents }
-                : item.contents;
-            sendMessage(messageObj);
-        }
-
-        async function deleteData(index) {
-            const item = window.listData[index];
-            if (!item || !item.id) {
-                Swal.fire({
-                    icon: "error",
-                    title: "ไม่พบข้อมูล",
-                    text: "ข้อมูลที่เลือกไม่พบหรือไม่มี ID",
-                });
-                return;
-            }
-            Swal.fire({
-                title: "คุณแน่ใจหรือไม่?",
-                text: "คุณต้องการลบข้อมูลนี้หรือไม่?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "ใช่, ลบ",
-                cancelButtonText: "ยกเลิก",
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    showLoading();
-                    try {
-                        const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/${item.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        });
-                        if (!response.ok) {
-                            throw new Error('ไม่สามารถลบข้อมูล');
-                        }
-                        window.listData.splice(index, 1);
-                        renderDataList();
-                        Swal.fire({
-                            icon: "success",
-                            title: "ลบสำเร็จ!",
-                            text: "ข้อมูลถูกลบเรียบร้อยแล้ว",
-                            timer: 1500,
-                            showConfirmButton: false,
-                        });
-                    } catch (error) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "ไม่สามารถลบข้อมูล",
-                            text: error.message,
-                        });
-                    } finally {
-                        hideLoading();
-                    }
-                }
-            });
-        }
-
         function clearInputs() {
             document.getElementById("textBox1").value = "";
             document.getElementById("textBox2").value = "";
             document.getElementById("locationTitle").value = "";
             document.getElementById("locationAddress").value = "";
             document.getElementById("locationInputs").style.display = "none";
+            window.currentItemId = null;
         }
 
         function escapeHtml(unsafe) {
