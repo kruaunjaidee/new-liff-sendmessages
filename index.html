@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="th">
   <head>
@@ -5,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LINE SHARE MESSAGE</title>
     <link rel="stylesheet" href="flex2html.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script type="text/javascript" src="flex2html.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
       body {
         background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
@@ -55,6 +58,12 @@
         padding: 15px;
         margin-bottom: 20px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        min-height: 300px; /* Ensure enough height for map */
+      }
+      #map {
+        width: 100%;
+        height: 250px;
+        border-radius: 10px;
       }
       #showtext {
         background-color: #fff;
@@ -62,14 +71,14 @@
         padding: 15px;
         margin-bottom: 20px;
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        white-space: pre-wrap; /* รองรับการขึ้นบรรทัดและตัดคำตามปกติ */
-        word-wrap: break-word; /* ตัดคำเมื่อข้อความยาวเกินกรอบ */
-        overflow-x: auto; /* เพิ่ม scrollbar แนวนอนถ้าข้อความยาวเกิน */
-        overflow-y: auto; /* เพิ่ม scrollbar แนวตั้งถ้าข้อความยาวเกิน */
-        max-height: 200px; /* จำกัดความสูงเพื่อป้องกันการขยายเกิน */
-        line-height: 1.5; /* เพิ่มระยะห่างระหว่างบรรทัดเพื่อความอ่านง่าย */
-        font-size: 1rem; /* ขนาดฟอนต์ที่เหมาะสม */
-        box-sizing: border-box; /* รวม padding ในขนาดกรอบ */
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 200px;
+        line-height: 1.5;
+        font-size: 1rem;
+        box-sizing: border-box;
       }
       .btn {
         border-radius: 50px;
@@ -123,6 +132,10 @@
       .btn-sticker {
         background-color: #ff6b6b;
         border-color: #ff6b6b;
+      }
+      .btn-location {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
       }
       .btn:hover {
         transform: translateY(-2px);
@@ -206,14 +219,14 @@
           class="form-control"
           type="text"
           id="textBox1"
-          placeholder="ข้อมูลที่ 1 (เช่น packageId สำหรับ Sticker, หัวข้อสำหรับ Template)"
+          placeholder="ข้อมูลที่ 1 (เช่น packageId สำหรับ Sticker, หัวข้อสำหรับ Template, latitude สำหรับ Location)"
         />
       </div>
       <div class="mb-3">
         <textarea
           class="form-control"
           id="textBox2"
-          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template)"
+          placeholder="ข้อมูลที่ 2 (เช่น stickerId สำหรับ Sticker, JSON สำหรับ Template, longitude สำหรับ Location)"
         ></textarea>
       </div>
       <div
@@ -256,6 +269,12 @@
         <button class="btn btn-dark" onclick="sendVideo()">Send Vid</button>
         <button class="btn btn-info" onclick="getLocation()">Get Loc</button>
         <button class="btn btn-info" onclick="sendLocation()">Send Loc</button>
+        <button
+          class="btn btn-location"
+          onclick="showLocation(); toggleMessageDisplay('flex1')"
+        >
+          Show Location
+        </button>
         <button class="btn btn-danger" onclick="scanQrCode()">
           Scan QR
         </button>
@@ -295,6 +314,9 @@
       <div style="margin-top: 10px;" id="dataList" class="mt-3 bg-white p-2 rounded"></div>
     </div>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
       const liffId = "2005780370-QmwJlX9q";
       const SUPABASE_FUNCTIONS_URL = 'https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker';
@@ -362,6 +384,33 @@
         } catch (error) {
           console.error("Error parsing Flex JSON:", error);
           flexContainer.innerHTML = '<p class="text-danger">Invalid Flex JSON. Please check your input.</p>';
+        }
+      }
+
+      function showLocation() {
+        const flexContainer = document.getElementById("flex1");
+        flexContainer.innerHTML = '<div id="map"></div>';
+        try {
+          const json = document.getElementById("textBox2").value.trim();
+          let locationObj;
+          if (json) {
+            locationObj = JSON.parse(json);
+          } else {
+            throw new Error("No location data provided");
+          }
+          if (locationObj.type !== "location" || !locationObj.latitude || !locationObj.longitude) {
+            throw new Error("Invalid location message format");
+          }
+          const map = L.map('map').setView([locationObj.latitude, locationObj.longitude], 13);
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(map);
+          L.marker([locationObj.latitude, locationObj.longitude]).addTo(map)
+            .bindPopup(`${locationObj.title || "Location"}<br>${locationObj.address || "No address provided"}`)
+            .openPopup();
+        } catch (error) {
+          console.error("Error showing location:", error);
+          flexContainer.innerHTML = `<p class="text-danger">Invalid location JSON: ${error.message}</p>`;
         }
       }
 
@@ -855,7 +904,6 @@
             Swal.showLoading();
           },
         });
-        console.log("Saving data:", data);
         try {
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
             method: "POST",
@@ -875,7 +923,6 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
-          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
@@ -933,6 +980,15 @@
         let templateObj;
         try {
           templateObj = JSON.parse(templateJson);
+          if (templateObj.type !== "template" && templateObj.type !== "location") {
+            throw new Error("JSON must have type: 'template' or 'location'");
+          }
+          if (templateObj.type === "template" && (!templateObj.template || !["buttons", "confirm", "carousel", "image_carousel"].includes(templateObj.template.type))) {
+            throw new Error("Invalid template type");
+          }
+          if (templateObj.type === "location" && (!templateObj.latitude || !templateObj.longitude)) {
+            throw new Error("Invalid location message format");
+          }
         } catch (error) {
           Swal.fire({
             icon: "error",
@@ -946,7 +1002,7 @@
           text1: templateJson,
           userId: profile.userId,
           displayName: profile.displayName,
-          type: "template"
+          type: templateObj.type
         };
         Swal.fire({
           title: "กำลังบันทึกข้อมูล...",
@@ -955,7 +1011,6 @@
             Swal.showLoading();
           },
         });
-        console.log("Saving data:", data);
         try {
           const response = await fetch(SUPABASE_FUNCTIONS_URL, {
             method: "POST",
@@ -975,7 +1030,6 @@
             throw new Error(errorMessage);
           }
           const result = await response.json();
-          console.log("Save response:", result);
           if (result.success) {
             Swal.fire({
               icon: "success",
@@ -1008,7 +1062,6 @@
           console.warn("Profile not loaded yet, skipping fetchDataList");
           return;
         }
-        console.log("Fetching data for userId:", profile.userId);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
             method: "GET",
@@ -1027,7 +1080,6 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
-          console.log("Fetched data:", data);
           if (!Array.isArray(data)) {
             throw new Error("Data is not an array");
           }
@@ -1075,7 +1127,6 @@
       }
 
       async function showMessage(id, retryCount = 0, maxRetries = 1) {
-        console.log("Showing message for id:", id, "listData:", window.listData);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
@@ -1132,7 +1183,7 @@
         flexContainer.innerHTML = "";
         try {
           document.getElementById("textBox2").value = item.text1;
-          formatJson(); // Automatically format JSON in textBox2
+          formatJson();
           const obj = JSON.parse(item.text1);
           if (item.type === "flex") {
             if (!isValidFlexMessage(obj)) {
@@ -1161,6 +1212,20 @@
             flexContainer.innerHTML = `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
+          } else if (item.type === "location") {
+            flexContainer.innerHTML = '<div id="map"></div>';
+            if (!obj.latitude || !obj.longitude) {
+              throw new Error("Invalid location message format");
+            }
+            const map = L.map('map').setView([obj.latitude, obj.longitude], 13);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker([obj.latitude, obj.longitude]).addTo(map)
+              .bindPopup(`${obj.title || "Location"}<br>${obj.address || "No address provided"}`)
+              .openPopup();
+            flexContainer.style.display = "block";
+            flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
             throw new Error("Unknown message type");
           }
@@ -1178,7 +1243,6 @@
         if (!profile || !profile.userId) {
           throw new Error("โปรไฟล์ยังไม่โหลด");
         }
-        console.log("Deleting item with id:", id);
         try {
           const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
             method: "DELETE",
@@ -1201,7 +1265,6 @@
             throw new Error(errorMessage);
           }
           const data = await response.json();
-          console.log("Delete response:", data);
           if (!data.success) {
             throw new Error(data.error || "Unknown error occurred");
           }
@@ -1266,7 +1329,6 @@
       }
 
       async function shareListItem(id, retryCount = 0, maxRetries = 1) {
-        console.log("Sharing item with id:", id);
         if (!window.listData || !Array.isArray(window.listData)) {
           console.warn("listData is not initialized, attempting to fetch...");
           if (retryCount < maxRetries) {
@@ -1325,6 +1387,17 @@
             };
           } else if (item.type === "template") {
             messageObj = messageObjRaw;
+          } else if (item.type === "location") {
+            if (!messageObjRaw.latitude || !messageObjRaw.longitude) {
+              throw new Error("Invalid location message format");
+            }
+            messageObj = {
+              type: "location",
+              title: messageObjRaw.title || "My Location",
+              address: messageObjRaw.address || "View on map",
+              latitude: parseFloat(messageObjRaw.latitude),
+              longitude: parseFloat(messageObjRaw.longitude)
+            };
           } else {
             throw new Error("Unknown message type");
           }
@@ -1387,8 +1460,6 @@
         if (textBox2) textBox2.value = "";
       }
     </script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </body>
 </html>
+```
