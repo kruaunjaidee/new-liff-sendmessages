@@ -275,9 +275,9 @@
             <button class="btn btn-dark" onclick="sendVideo()">Send Vid</button>
             <button class="btn btn-info" onclick="getLocation()">Get Loc</button>
             <button class="btn btn-info" onclick="sendLocation()">Send Loc</button>
-            <button class="btn btn-location" onclick="showLocation(); toggleMessageDisplay('flex1')">
+<!--             <button class="btn btn-location" onclick="showLocation(); toggleMessageDisplay('flex1')">
                 Show Location
-            </button>
+            </button> -->
             <button class="btn btn-danger" onclick="scanQrCode()">Scan QR</button>
             <button class="btn btn-template" onclick="showTemplate(); toggleMessageDisplay('flex1')">
                 Show Template
@@ -373,7 +373,9 @@
           <div style="position: relative; width: 60px; height: 60px;">
             <div class="pulse-marker" style="width: 60px; height: 60px; position: absolute;"></div>
             <img src="${imageUrl}" style="width: 50px; height: 50px; border-radius: 50%; position: absolute; top: 5px; left: 5px; border: 3px solid white; object-fit: cover;">
+            <div style="position: relative;">
             <p>${displayName}</p>
+            </div>
           </div>`;
 
             const customIcon = L.divIcon({
@@ -387,9 +389,9 @@
             const marker = L.marker(position, { icon: customIcon }).addTo(map);
             marker.bindPopup(`
           <div class="popup-header">${escapeHtml(displayName)}</div>
-          <div class="p-3 flex justify-center">
-            <img src="${imageUrl}" class="size-16 rounded-full shadow">
-          </div>
+          // <div class="p-3 flex justify-center">
+          //   <img src="${imageUrl}" class="size-16 rounded-full shadow">
+          // </div>
           <div class="p-2 text-center">
             <p>อัปเดตล่าสุด: ${new Date(timestamp).toLocaleString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} น.</p>
             <button class="popup-button" onclick="navigateTo(${position[0]},${position[1]})">ไปยังตำแหน่งนี้</button>
