@@ -417,6 +417,8 @@
       // แสดง flex1 ทันทีและล้าง content เก่า - ใช้ setAttribute และ !important เพื่อให้แน่ใจว่าจะแสดงผล
       flexContainer.style.setProperty('display', 'block', 'important');
       flexContainer.setAttribute('style', 'display: block !important;');
+      flexContainer.classList.remove('d-none');
+      flexContainer.classList.add('d-block');
       flexContainer.innerHTML = "";
       
       const templateJson = textBox2.value.trim();
