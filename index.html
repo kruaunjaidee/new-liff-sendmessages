@@ -1395,7 +1395,7 @@
         }
       }
 
-      async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {
+      async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {
         if (!profile || !profile.userId) {
           throw new Error("โปรไฟล์ยังไม่โหลด");
         }
@@ -1434,6 +1434,8 @@
           throw error;
         }
       }
+
+                                                                               
       function deleteListItem(id) {
         Swal.fire({
           title: "คุณแน่ใจหรือไม่?",
