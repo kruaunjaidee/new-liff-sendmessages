@@ -278,7 +278,7 @@
       <button class="btn btn-danger" onclick="scanQrCode()">
         Scan QR
       </button>
-      <button class="btn btn-template" onclick="showTemplate(); toggleMessageDisplay('flex1')">
+      <button class="btn btn-template" onclick="showTemplate(); toggleMessageDisplay('flex1')">Show Template</button>
         Show Template
       </button>
       <button class="btn btn-template" onclick="sendTemplate()">
@@ -404,6 +404,15 @@
 
     function showTemplate() {
       const flexContainer = document.getElementById("flex1");
+      if (!flexContainer) {
+        console.error("flex1 element not found");
+        Swal.fire({
+          icon: "error",
+          title: "ข้อผิดพลาด",
+          text: "ไม่พบคอนเทนเนอร์สำหรับแสดงข้อความ",
+        });
+        return;
+      }
       flexContainer.innerHTML = "";
       const templateJson = document.getElementById("textBox2").value.trim();
       if (!templateJson) {
@@ -413,19 +422,19 @@
       }
       try {
         const templateObject = JSON.parse(templateJson);
-        const formattedJson = JSON.stringify(templateObject, null, 2);
-        // Create a text node to safely handle JSON content
-        const preElement = document.createElement("pre");
-        preElement.style.backgroundColor = "#f8f9fa";
-        preElement.style.padding = "10px";
-        preElement.style.borderRadius = "5px";
-        preElement.style.overflowX = "auto";
-        preElement.style.margin = "0";
-        preElement.textContent = formattedJson;
-        flexContainer.appendChild(preElement);
+        const formattedJson = JSON.stringify(templateObject, null, jsonIndentLevel);
+        const jsonContainer = document.createElement("div");
+        jsonContainer.style.whiteSpace = "pre-wrap";
+        jsonContainer.style.backgroundColor = "#f8f9fa";
+        jsonContainer.style.padding = "10px";
+        jsonContainer.style.borderRadius = "5px";
+        jsonContainer.style.overflowX = "auto";
+        jsonContainer.style.margin = "0";
+        jsonContainer.textContent = formattedJson;
+        flexContainer.appendChild(jsonContainer);
         flexContainer.style.display = "block";
       } catch (error) {
-        console.error("Error parsing JSON:", error);
+        console.error("Error parsing JSON in showTemplate:", error);
         flexContainer.innerHTML = '<p class="text-danger">JSON ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ป้อน: ' + error.message + '</p>';
         flexContainer.style.display = "block";
       }
