@@ -414,8 +414,15 @@
       try {
         const templateObject = JSON.parse(templateJson);
         const formattedJson = JSON.stringify(templateObject, null, 2);
-        const escapedJson = formattedJson.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        flexContainer.innerHTML = `<pre style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; margin: 0;">${escapedJson}</pre>`;
+        // Create a text node to safely handle JSON content
+        const preElement = document.createElement("pre");
+        preElement.style.backgroundColor = "#f8f9fa";
+        preElement.style.padding = "10px";
+        preElement.style.borderRadius = "5px";
+        preElement.style.overflowX = "auto";
+        preElement.style.margin = "0";
+        preElement.textContent = formattedJson;
+        flexContainer.appendChild(preElement);
         flexContainer.style.display = "block";
       } catch (error) {
         console.error("Error parsing JSON:", error);
@@ -424,6 +431,7 @@
       }
     }
 
+    
     function showImagemap() {
       const flexContainer = document.getElementById("flex1");
       flexContainer.innerHTML = "";
