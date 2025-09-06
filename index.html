@@ -446,14 +446,14 @@
         jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
         flexContainer.appendChild(jsonContainer);
+        // Create container for rendered template
+        const renderContainer = document.createElement("div");
+        renderContainer.id = "template-render-" + Date.now(); // Unique ID to avoid conflicts
+        flexContainer.appendChild(renderContainer);
         // Render JSON content using flex2html
         if (typeof flex2html === "function") {
           try {
-            // Create a separate div for rendering to avoid conflicts
-            const renderContainer = document.createElement("div");
-            renderContainer.id = "template-render";
-            flexContainer.appendChild(renderContainer);
-            flex2html("template-render", templateObject);
+            flex2html(renderContainer.id, templateObject);
           } catch (error) {
             console.error("Error in flex2html:", error);
             const errorDiv = document.createElement("div");
