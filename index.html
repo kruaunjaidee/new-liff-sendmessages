@@ -246,7 +246,7 @@
       <img id="pictureUrl" class="mb-2" alt="Profile Picture" />
       <p class="text-white mb-2" id="displayName"></p>
     </center>
-    <h2 class="text-white text-center">❤️ SendMessage ❤️</h2>
+    <h2 class="text-white text-center">❤️All Share Messages❤️</h2>
     <div class="mb-3">
       <input class="form-control" type="text" id="textBox1"
         placeholder="ข้อมูลที่ 1 (เช่น หัวข้อสำหรับ Flex/Template/Imagemap)" />
@@ -402,27 +402,37 @@
 
     function showTemplate() {
       const flexContainer = document.getElementById("flex1");
-      if (!flexContainer) {
-        console.error("flex1 element not found");
+      const textBox2 = document.getElementById("textBox2");
+      if (!flexContainer || !textBox2) {
+        console.error("flex1 or textBox2 element not found");
         Swal.fire({
           icon: "error",
           title: "ข้อผิดพลาด",
-          text: "ไม่พบคอนเทนเนอร์สำหรับแสดงข้อความ",
+          text: "ไม่พบคอนเทนเนอร์หรือช่องป้อนข้อมูลสำหรับแสดงข้อความ",
         });
         return;
       }
       flexContainer.innerHTML = "";
-      const templateJson = document.getElementById("textBox2").value.trim();
+      const templateJson = textBox2.value.trim();
       if (!templateJson) {
         flexContainer.innerHTML = '<p class="text-danger">กรุณาใส่ JSON ที่ถูกต้องในช่องที่สอง</p>';
         flexContainer.style.display = "block";
+        Swal.fire({
+          icon: "error",
+          title: "ไม่มี JSON ให้จัดรูปแบบ",
+          text: "กรุณาใส่ JSON ในช่องที่สอง",
+        });
         return;
       }
       try {
         const templateObject = JSON.parse(templateJson);
+        // Toggle indentation like formatJson
+        jsonIndentLevel = jsonIndentLevel === 2 ? 4 : jsonIndentLevel === 4 ? 0 : 2;
+        const indentLabel = jsonIndentLevel === 0 ? "minified" : `${jsonIndentLevel} spaces`;
         const formattedJson = JSON.stringify(templateObject, null, jsonIndentLevel);
-        
-        // สร้าง div แทน pre
+        // Update textBox2 with formatted JSON
+        textBox2.value = formattedJson;
+        // Display formatted JSON in flex1
         const jsonContainer = document.createElement("div");
         jsonContainer.style.whiteSpace = "pre-wrap";
         jsonContainer.style.backgroundColor = "#f8f9fa";
@@ -435,13 +445,35 @@
         jsonContainer.style.margin = "0";
         jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
-        
         flexContainer.appendChild(jsonContainer);
         flexContainer.style.display = "block";
+        // Show success message like formatJson
+        Swal.fire({
+          icon: "success",
+          title: "จัดรูปแบบ JSON เรียบร้อย",
+          text: `จัดรูปแบบด้วยการเยื้อง ${indentLabel}`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        // Call showMessage if a matching item is found in listData
+        if (window.listData && Array.isArray(window.listData)) {
+          const title = document.getElementById("textBox1").value.trim();
+          const matchingItem = window.listData.find(
+            item => item.text1 === templateJson || (item.title === title && item.type === "template")
+          );
+          if (matchingItem) {
+            showMessage(matchingItem.id);
+          }
+        }
       } catch (error) {
         console.error("Error parsing JSON in showTemplate:", error);
         flexContainer.innerHTML = '<p class="text-danger">JSON ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ป้อน: ' + error.message + '</p>';
         flexContainer.style.display = "block";
+        Swal.fire({
+          icon: "error",
+          title: "JSON ไม่ถูกต้อง",
+          text: `กรุณาตรวจสอบ JSON ที่ป้อน: ${error.message}`,
+        });
       }
     }
 
