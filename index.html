@@ -446,16 +446,21 @@
         jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
         flexContainer.appendChild(jsonContainer);
-        // Render template content using flex2html
-        const templateMessage = {
-          type: "template",
-          altText: document.getElementById("textBox1").value.trim() || "Template Message",
-          template: templateObject
-        };
+        // Render JSON content using flex2html
         if (typeof flex2html === "function") {
-          const renderContainer = document.createElement("div");
-          flexContainer.appendChild(renderContainer);
-          flex2html(renderContainer, templateMessage);
+          try {
+            // Create a separate div for rendering to avoid conflicts
+            const renderContainer = document.createElement("div");
+            renderContainer.id = "template-render";
+            flexContainer.appendChild(renderContainer);
+            flex2html("template-render", templateObject);
+          } catch (error) {
+            console.error("Error in flex2html:", error);
+            const errorDiv = document.createElement("div");
+            errorDiv.className = "text-danger";
+            errorDiv.textContent = "ไม่สามารถแสดงผล JSON ได้: " + error.message;
+            flexContainer.appendChild(errorDiv);
+          }
         } else {
           console.error("flex2html function is not available");
           const errorDiv = document.createElement("div");
@@ -472,16 +477,6 @@
           timer: 1500,
           showConfirmButton: false,
         });
-        // Call showMessage if a matching item is found in listData
-        if (window.listData && Array.isArray(window.listData)) {
-          const title = document.getElementById("textBox1").value.trim();
-          const matchingItem = window.listData.find(
-            item => item.text1 === templateJson || (item.title === title && item.type === "template")
-          );
-          if (matchingItem) {
-            showMessage(matchingItem.id);
-          }
-        }
       } catch (error) {
         console.error("Error parsing JSON in showTemplate:", error);
         flexContainer.innerHTML = '<p class="text-danger">JSON ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ป้อน: ' + error.message + '</p>';
@@ -493,7 +488,6 @@
         });
       }
     }
-
 
     
     function showImagemap() {
