@@ -403,6 +403,7 @@
     function showTemplate() {
       const flexContainer = document.getElementById("flex1");
       const textBox2 = document.getElementById("textBox2");
+      
       if (!flexContainer || !textBox2) {
         console.error("flex1 or textBox2 element not found");
         Swal.fire({
@@ -412,11 +413,14 @@
         });
         return;
       }
+    
+      // แสดง flex1 ทันทีและล้าง content เก่า
+      flexContainer.style.display = "block";
       flexContainer.innerHTML = "";
+      
       const templateJson = textBox2.value.trim();
       if (!templateJson) {
         flexContainer.innerHTML = '<p class="text-danger">กรุณาใส่ JSON ที่ถูกต้องในช่องที่สอง</p>';
-        flexContainer.style.display = "block";
         Swal.fire({
           icon: "error",
           title: "ไม่มี JSON ให้จัดรูปแบบ",
@@ -424,14 +428,18 @@
         });
         return;
       }
+    
       try {
         const templateObject = JSON.parse(templateJson);
+        
         // Toggle indentation like formatJson
         jsonIndentLevel = jsonIndentLevel === 2 ? 4 : jsonIndentLevel === 4 ? 0 : 2;
         const indentLabel = jsonIndentLevel === 0 ? "minified" : `${jsonIndentLevel} spaces`;
         const formattedJson = JSON.stringify(templateObject, null, jsonIndentLevel);
+        
         // Update textBox2 with formatted JSON
         textBox2.value = formattedJson;
+        
         // Create container for formatted JSON
         const jsonContainer = document.createElement("div");
         jsonContainer.style.whiteSpace = "pre-wrap";
@@ -445,11 +453,14 @@
         jsonContainer.style.margin = "0 0 10px 0";
         jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
+        
         flexContainer.appendChild(jsonContainer);
+        
         // Create container for rendered template
         const renderContainer = document.createElement("div");
         renderContainer.id = "template-render-" + Date.now(); // Unique ID to avoid conflicts
         flexContainer.appendChild(renderContainer);
+        
         // Render JSON content using flex2html
         if (typeof flex2html === "function") {
           try {
@@ -468,8 +479,8 @@
           errorDiv.textContent = "flex2html library is not loaded properly.";
           flexContainer.appendChild(errorDiv);
         }
-        flexContainer.style.display = "block"; // Ensure flex1 is visible
-        // Show success message like formatJson
+        
+        // Show success message
         Swal.fire({
           icon: "success",
           title: "จัดรูปแบบ JSON เรียบร้อย",
@@ -477,10 +488,10 @@
           timer: 1500,
           showConfirmButton: false,
         });
+        
       } catch (error) {
         console.error("Error parsing JSON in showTemplate:", error);
         flexContainer.innerHTML = '<p class="text-danger">JSON ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ป้อน: ' + error.message + '</p>';
-        flexContainer.style.display = "block";
         Swal.fire({
           icon: "error",
           title: "JSON ไม่ถูกต้อง",
@@ -488,7 +499,6 @@
         });
       }
     }
-
     
     function showImagemap() {
       const flexContainer = document.getElementById("flex1");
