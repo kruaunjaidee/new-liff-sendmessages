@@ -414,7 +414,8 @@
       try {
         const templateObject = JSON.parse(templateJson);
         const formattedJson = JSON.stringify(templateObject, null, 2);
-        flexContainer.innerHTML = `<pre style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">${formattedJson}</pre>`;
+        const escapedJson = formattedJson.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        flexContainer.innerHTML = `<pre style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; margin: 0;">${escapedJson}</pre>`;
         flexContainer.style.display = "block";
       } catch (error) {
         console.error("Error parsing JSON:", error);
