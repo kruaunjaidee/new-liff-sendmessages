@@ -432,7 +432,7 @@
         const formattedJson = JSON.stringify(templateObject, null, jsonIndentLevel);
         // Update textBox2 with formatted JSON
         textBox2.value = formattedJson;
-        // Display formatted JSON in flex1
+        // Create container for formatted JSON
         const jsonContainer = document.createElement("div");
         jsonContainer.style.whiteSpace = "pre-wrap";
         jsonContainer.style.backgroundColor = "#f8f9fa";
@@ -442,10 +442,27 @@
         jsonContainer.style.fontFamily = "monospace";
         jsonContainer.style.fontSize = "14px";
         jsonContainer.style.lineHeight = "1.4";
-        jsonContainer.style.margin = "0";
+        jsonContainer.style.margin = "0 0 10px 0";
         jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
         flexContainer.appendChild(jsonContainer);
+        // Render template content using flex2html
+        const templateMessage = {
+          type: "template",
+          altText: document.getElementById("textBox1").value.trim() || "Template Message",
+          template: templateObject
+        };
+        if (typeof flex2html === "function") {
+          const renderContainer = document.createElement("div");
+          flexContainer.appendChild(renderContainer);
+          flex2html(renderContainer, templateMessage);
+        } else {
+          console.error("flex2html function is not available");
+          const errorDiv = document.createElement("div");
+          errorDiv.className = "text-danger";
+          errorDiv.textContent = "flex2html library is not loaded properly.";
+          flexContainer.appendChild(errorDiv);
+        }
         flexContainer.style.display = "block";
         // Show success message like formatJson
         Swal.fire({
