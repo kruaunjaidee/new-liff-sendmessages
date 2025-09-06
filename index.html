@@ -301,9 +301,6 @@
             <button class="btn btn-dark" onclick="sendVideo()">Send Vid</button>
             <button class="btn btn-info" onclick="getLocation()">Get Loc</button>
             <button class="btn btn-info" onclick="sendLocation()">Send Loc</button>
-<!--             <button class="btn btn-location" onclick="showLocation(); toggleMessageDisplay('flex1')">
-                Show Location
-            </button> -->
             <button class="btn btn-danger" onclick="scanQrCode()">Scan QR</button>
             <button class="btn btn-template" onclick="showTemplate(); toggleMessageDisplay('flex1')">
                 Show Template
@@ -345,8 +342,10 @@
         let jsonIndentLevel = 4;
         let map = null;
         let markers = [];
-        // เพิ่มตัวแปรสำหรับ Edge Function URL (แทนที่ด้วย URL จริงของ Edge Function)
-        const EDGE_FUNCTION_URL = "https://your-supabase-edge-function-url.supabase.co/functions/v1/your-function-name"; // แทนที่ด้วย URL จริง
+        // แทนที่ด้วย URL จริงของ Supabase Edge Function
+        const EDGE_FUNCTION_URL = "https://mihtvcbzguzkvfwnlnem.supabase.co/functions/v1/submit-liff-shartargetpicker";
+        // เพิ่ม Supabase API Key สำหรับ Authorization
+        const SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1paHR2Y2J6Z3V6a3Zmd25sbmVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMTIwODgsImV4cCI6MjA2OTY4ODA4OH0.KsoeL5xa4viDwrwc4Z6UMmcAuOQqO8txgzosWsCYmrs"; // แทนที่ด้วย API Key จริงจาก Supabase
 
         liff
             .init({ liffId })
@@ -416,8 +415,8 @@
             const customIcon = L.divIcon({
                 html: iconHtml,
                 className: '',
-                iconSize: [60, 80], // ปรับ iconSize เพื่อรองรับข้อความด้านล่าง
-                iconAnchor: [30, 40], // ปรับ anchor เพื่อให้ marker อยู่กึ่งกลาง
+                iconSize: [60, 80],
+                iconAnchor: [30, 40],
                 popupAnchor: [0, -40]
               });
               const marker = L.marker(position, { icon: customIcon }).addTo(map);
@@ -432,7 +431,7 @@
                 </div>
               `);
               markers.push(marker);
-                    }
+        }
 
         function getLocation() {
             if (!navigator.geolocation) {
@@ -741,7 +740,7 @@
 
         function showImage() {
             const src = document.getElementById("textBox2").value;
-            document.getElementById("flex1").innerHTML = `<img src="${src}" alt="Shared Image">`;
+            document.getElementById("flex1").innerHTML = `<img width="100%" src="${src}" alt="Shared Image">`;
         }
 
         function showFlex() {
@@ -855,7 +854,6 @@
                     });
                     return;
                 }
-                // Save to Supabase before sending
                 await saveToSupabase('template', JSON.stringify(messageObj), 'Template Message');
                 sendMessage(messageObj);
             } catch (error) {
@@ -956,7 +954,6 @@
                 altText: altText || "Flex Message",
                 contents: contents,
             };
-            // Save to Supabase before sending
             await saveToSupabase('flex', JSON.stringify(contents), altText || 'Flex Message');
             sendMessage(messageObj);
         }
@@ -1241,7 +1238,6 @@
                 .replace(/'/g, "&#39;");
         }
 
-        // New Supabase integration functions
         async function saveToSupabase(type, text1, title) {
             if (!profile || !profile.userId) {
                 Swal.fire({
@@ -1257,6 +1253,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_API_KEY}`
                     },
                     body: JSON.stringify({
                         title: title,
@@ -1299,7 +1296,11 @@
             }
             showLoading();
             try {
-                const response = await fetch(`${EDGE_FUNCTION_URL}?userId=${profile.userId}`);
+                const response = await fetch(`${EDGE_FUNCTION_URL}?userId=${profile.userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_API_KEY}`
+                    }
+                });
                 const data = await response.json();
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to fetch');
@@ -1340,7 +1341,7 @@
         function loadItemToInputs(type, text1) {
             document.getElementById("textBox2").value = text1;
             if (type === 'flex') {
-                document.getElementById("textBox1").value = ''; // สำหรับ altText ถ้าต้องการ
+                document.getElementById("textBox1").value = '';
                 showFlex();
             } else if (type === 'template') {
                 showTemplate();
@@ -1351,7 +1352,10 @@
             showLoading();
             try {
                 const response = await fetch(`${EDGE_FUNCTION_URL}?id=${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_API_KEY}`
+                    }
                 });
                 const data = await response.json();
                 if (!response.ok) {
@@ -1363,7 +1367,7 @@
                     timer: 1500,
                     showConfirmButton: false,
                 });
-                fetchHistory(); // Refresh history
+                fetchHistory();
             } catch (error) {
                 console.error("Error deleting from Supabase:", error);
                 Swal.fire({
