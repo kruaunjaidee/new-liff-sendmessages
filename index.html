@@ -279,8 +279,6 @@
         Scan QR
       </button>
       <button class="btn btn-template" onclick="showTemplate(); toggleMessageDisplay('flex1')">Show Template</button>
-        Show Template
-      </button>
       <button class="btn btn-template" onclick="sendTemplate()">
         Send Template
       </button>
@@ -423,14 +421,21 @@
       try {
         const templateObject = JSON.parse(templateJson);
         const formattedJson = JSON.stringify(templateObject, null, jsonIndentLevel);
+        
+        // สร้าง div แทน pre
         const jsonContainer = document.createElement("div");
         jsonContainer.style.whiteSpace = "pre-wrap";
         jsonContainer.style.backgroundColor = "#f8f9fa";
         jsonContainer.style.padding = "10px";
         jsonContainer.style.borderRadius = "5px";
         jsonContainer.style.overflowX = "auto";
+        jsonContainer.style.fontFamily = "monospace";
+        jsonContainer.style.fontSize = "14px";
+        jsonContainer.style.lineHeight = "1.4";
         jsonContainer.style.margin = "0";
+        jsonContainer.style.border = "1px solid #e9ecef";
         jsonContainer.textContent = formattedJson;
+        
         flexContainer.appendChild(jsonContainer);
         flexContainer.style.display = "block";
       } catch (error) {
@@ -439,6 +444,7 @@
         flexContainer.style.display = "block";
       }
     }
+
 
     
     function showImagemap() {
@@ -1401,7 +1407,21 @@
               flexContainer.innerHTML = '<p class="text-danger">flex2html library is not loaded properly.</p>';
             }
           } else if (item.type === "template") {
-            flexContainer.innerHTML = `< pre > ${ JSON.stringify(obj, null, 2) }</pre > `;
+            // แก้ไขส่วนนี้ - ใช้ div แทน pre
+            const jsonContainer = document.createElement("div");
+            jsonContainer.style.whiteSpace = "pre-wrap";
+            jsonContainer.style.backgroundColor = "#f8f9fa";
+            jsonContainer.style.padding = "10px";
+            jsonContainer.style.borderRadius = "5px";
+            jsonContainer.style.overflowX = "auto";
+            jsonContainer.style.fontFamily = "monospace";
+            jsonContainer.style.fontSize = "14px";
+            jsonContainer.style.lineHeight = "1.4";
+            jsonContainer.style.margin = "0";
+            jsonContainer.style.border = "1px solid #e9ecef";
+            jsonContainer.textContent = JSON.stringify(obj, null, 2);
+            
+            flexContainer.appendChild(jsonContainer);
             flexContainer.style.display = "block";
             flexContainer.scrollIntoView({ behavior: "smooth" });
           } else {
@@ -1412,7 +1432,7 @@
           Swal.fire({
             icon: "error",
             title: "ไม่สามารถแสดงข้อความได้",
-            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${ e.message } `,
+            text: `รูปแบบข้อมูลไม่ถูกต้อง: ${e.message}`,
           });
         }
       }
