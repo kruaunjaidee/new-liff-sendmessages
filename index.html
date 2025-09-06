@@ -412,7 +412,7 @@
       }
       try {
         const templateObject = JSON.parse(templateJson);
-        flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
+        flexContainer.innerHTML = `${JSON.stringify(templateObject, null, 2)}`;
       } catch (error) {
         console.error("Error parsing JSON:", error);
         flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
@@ -1395,12 +1395,12 @@
         }
       }
 
-      async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {
+      async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {async function deleteItemFromServer(id, retryCount = 0, maxRetries = 3) {
         if (!profile || !profile.userId) {
           throw new Error("โปรไฟล์ยังไม่โหลด");
         }
         try {
-          const response = await fetch(`${ SUPABASE_FUNCTIONS_URL }?id = ${ encodeURIComponent(id) }& userId=${ encodeURIComponent(profile.userId) } `, {
+          const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(profile.userId)}`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -1408,15 +1408,15 @@
           });
           if (!response.ok) {
             const text = await response.text();
-            let errorMessage = `Network response was not ok: ${ response.status } `;
+            let errorMessage = `Network response was not ok: ${response.status}`;
             if (response.status === 400) {
-              errorMessage = `Invalid request: ${ text } `;
+              errorMessage = `Invalid request: ${text}`;
             } else if (response.status === 403) {
-              errorMessage = `Unauthorized: ${ text } `;
+              errorMessage = `Unauthorized: ${text}`;
             } else if (response.status === 404) {
-              errorMessage = `Item not found: ${ text } `;
+              errorMessage = `Item not found: ${text}`;
             } else if (response.status === 500) {
-              errorMessage = `Server error: ${ text } `;
+              errorMessage = `Server error: ${text}`;
             }
             throw new Error(errorMessage);
           }
@@ -1427,14 +1427,13 @@
           return data;
         } catch (error) {
           if (retryCount < maxRetries) {
-            console.log(`Retrying deleteItemFromServer(${ retryCount + 1}/${maxRetries})...`);
+            console.log(`Retrying deleteItemFromServer(${retryCount + 1}/${maxRetries})...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
             return deleteItemFromServer(id, retryCount + 1, maxRetries);
           }
           throw error;
         }
       }
-
       function deleteListItem(id) {
         Swal.fire({
           title: "คุณแน่ใจหรือไม่?",
