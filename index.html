@@ -412,7 +412,8 @@
       }
       try {
         const templateObject = JSON.parse(templateJson);
-        flexContainer.innerHTML = `${JSON.stringify(templateObject, null, 2)}`;
+        flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
+        flexContainer.style.display = "block";
       } catch (error) {
         console.error("Error parsing JSON:", error);
         flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
