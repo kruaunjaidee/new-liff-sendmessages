@@ -1219,7 +1219,8 @@
           return;
         }
         try {
-          const response = await fetch(`${ SUPABASE_FUNCTIONS_URL }?userId = ${ encodeURIComponent(profile.userId) } `, {
+          // Remove the space in the query parameter
+          const response = await fetch(`${SUPABASE_FUNCTIONS_URL}?userId=${encodeURIComponent(profile.userId)}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -1227,11 +1228,11 @@
           });
           if (!response.ok) {
             const text = await response.text();
-            let errorMessage = `Network response was not ok: ${ response.status } `;
+            let errorMessage = `Network response was not ok: ${response.status}`;
             if (response.status === 400) {
-              errorMessage = `Invalid request: ${ text } `;
+              errorMessage = `Invalid request: ${text}`;
             } else if (response.status === 500) {
-              errorMessage = `Server error: ${ text } `;
+              errorMessage = `Server error: ${text}`;
             }
             throw new Error(errorMessage);
           }
@@ -1253,17 +1254,17 @@
                 console.warn("Error parsing item text1:", e);
               }
               return `
-      < div class="card" id = "item-${item.id}" >
-        <div class="card-body">
-          <h5 class="card-title">${title} (${displayType})</h5>
-          <div class="btn-group">
-            <button class="btn btn-sm btn-primary" onclick="shareListItem('${item.id}')">แชร์</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
-            <button class="btn btn-sm btn-info" onclick="showMessage('${item.id}')">แสดง</button>
-          </div>
-        </div>
-                </div >
-      `;
+                <div class="card" id="item-${item.id}">
+                  <div class="card-body">
+                    <h5 class="card-title">${title} (${displayType})</h5>
+                    <div class="btn-group">
+                      <button class="btn btn-sm btn-primary" onclick="shareListItem('${item.id}')">แชร์</button>
+                      <button class="btn btn-sm btn-danger" onclick="deleteListItem('${item.id}')">ลบ</button>
+                      <button class="btn btn-sm btn-info" onclick="showMessage('${item.id}')">แสดง</button>
+                    </div>
+                  </div>
+                </div>
+              `;
             })
             .join("");
           const dataListElement = document.getElementById("dataList");
@@ -1275,12 +1276,12 @@
         } catch (error) {
           console.error("Error fetching data:", error);
           if (retryCount < maxRetries) {
-            console.log(`Retrying fetchDataList(${ retryCount + 1}/${maxRetries})...`);
+            console.log(`Retrying fetchDataList(${retryCount + 1}/${maxRetries})...`);
             setTimeout(() => fetchDataList(retryCount + 1, maxRetries), 1000);
           } else {
             const dataListElement = document.getElementById("dataList");
             if (dataListElement) {
-              dataListElement.innerHTML = `< p class="text-danger" > Error loading data: ${ error.message }</p > `;
+              dataListElement.innerHTML = `<p class="text-danger">Error loading data: ${error.message}</p>`;
             }
             Swal.fire({
               icon: "error",
