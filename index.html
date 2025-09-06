@@ -407,16 +407,19 @@
       flexContainer.innerHTML = "";
       const templateJson = document.getElementById("textBox2").value.trim();
       if (!templateJson) {
-        flexContainer.innerHTML = '<p class="text-danger">Please provide a valid JSON in the second input.</p>';
+        flexContainer.innerHTML = '<p class="text-danger">กรุณาใส่ JSON ที่ถูกต้องในช่องที่สอง</p>';
+        flexContainer.style.display = "block";
         return;
       }
       try {
         const templateObject = JSON.parse(templateJson);
-        flexContainer.innerHTML = `<pre>${JSON.stringify(templateObject, null, 2)}</pre>`;
+        const formattedJson = JSON.stringify(templateObject, null, 2);
+        flexContainer.innerHTML = `<pre style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;">${formattedJson}</pre>`;
         flexContainer.style.display = "block";
       } catch (error) {
         console.error("Error parsing JSON:", error);
-        flexContainer.innerHTML = '<p class="text-danger">Invalid JSON. Please check your input.</p>';
+        flexContainer.innerHTML = '<p class="text-danger">JSON ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่ป้อน: ' + error.message + '</p>';
+        flexContainer.style.display = "block";
       }
     }
 
